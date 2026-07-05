@@ -1,0 +1,161 @@
+import express from "express";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { createLogger } from "@veristat/shared";
+import {
+  getService,
+  latestScore,
+  leaderboard,
+  listIncidents,
+  recentProbes,
+  runMigrations,
+  scoreHistory,
+  verificationsForProbes,
+} from "@veristat/db";
+import { paid } from "./paywall.js";
+
+/**
+ * The pre-purchase score API (spec §4.2): a paid x402 endpoint an agent calls
+ * before spending money on an unknown service. Veristat lists this endpoint
+ * as an ASP on OKX.AI — a rated, paid agent service that rates paid agent
+ * services — and it appears on its own leaderboard with a COI label (§9).
+ */
+const log = createLogger("score-api");
+const PORT = Number(process.env.SCORE_API_PORT ?? 4020);
+
+const PRICE_SCORE = Number(process.env.PRICE_SCORE_USD ?? 0.001);
+const PRICE_CATEGORY = Number(process.env.PRICE_CATEGORY_USD ?? 0.002);
+const PRICE_EVIDENCE = Number(process.env.PRICE_EVIDENCE_USD ?? 0.005);
+
+const app = express();
+
+function scorePayload(score: NonNullable<Awaited<ReturnType<typeof latestScore>>>) {
+  return {
+    composite: score.composite,
+    grade: score.grade,
+    confidence: score.confidence,
+    sampleCount: score.sampleCount,
+    dominantTier: score.dominantTier,
+    dimensions: {
+      accuracy: score.accuracy, // null = "accuracy not verified" (Tier 3) — never fabricated
+      reliability: score.reliability,
+      latency: score.latency,
+      integrity: score.integrity,
+      freshness: score.freshness,
+    },
+    computedAt: score.computedAt,
+  };
+}
+
+// ---- paid endpoints ----
+
+app.get("/v1/score/:serviceId", paid(PRICE_SCORE), async (req, res) => {
+  const service = await getService(Number(req.params.serviceId));
+  if (!service) {
+    res.status(404).json({ error: "unknown service" });
+    return;
+  }
+  const score = await latestScore(service.id);
+  res.json({
+    service: { id: service.id, name: service.name, endpoint: service.endpoint, category: service.category, status: service.status },
+    score: score ? scorePayload(score) : null,
+    conflictOfInterest: service.isSelf ? "this is Veristat's own listing, scored by the same methodology" : null,
+  });
+});
+
+app.get("/v1/category/:category", paid(PRICE_CATEGORY), async (req, res) => {
+  const rows = await leaderboard();
+  const filtered = rows.filter((r) => r.service.category === req.params.category);
+  res.json({
+    category: req.params.category,
+    services: filtered.map((r) => ({
+      id: r.service.id,
+      name: r.service.name,
+      endpoint: r.service.endpoint,
+      score: r.score ? scorePayload(r.score) : null,
+    })),
+  });
+});
+
+app.get("/v1/evidence/:serviceId", paid(PRICE_EVIDENCE), async (req, res) => {
+  const service = await getService(Number(req.params.serviceId));
+  if (!service) {
+    res.status(404).json({ error: "unknown service" });
+    return;
+  }
+  const [score, history, probes, incidents] = await Promise.all([
+    latestScore(service.id),
+    scoreHistory(service.id, 100),
+    recentProbes(service.id, 20),
+    listIncidents(service.id, 50),
+  ]);
+  const verifications = await verificationsForProbes(probes.map((p) => p.id));
+  res.json({
+    service: { id: service.id, name: service.name, endpoint: service.endpoint, category: service.category },
+    score: score ? scorePayload(score) : null,
+    scoreHistory: history.map((h) => ({ composite: h.composite, computedAt: h.computedAt })),
+    incidents,
+    evidence: probes.map((p) => ({
+      probeId: p.id,
+      templateId: p.templateId,
+      requestUrl: p.requestUrl,
+      paymentTxHash: p.paymentTxHash,
+      quotedUsd: p.quotedUsd,
+      chargedUsd: p.chargedUsd,
+      latencyMs: p.latencyMs,
+      responseHash: p.responseHash,
+      startedAt: p.startedAt,
+      verdicts: verifications
+        .filter((v) => v.probeId === p.id)
+        .map((v) => ({
+          tier: v.tier,
+          dimension: v.dimension,
+          verdict: v.verdict,
+          expected: v.expected,
+          actual: v.actual,
+          groundTruth: v.groundTruth,
+          detail: v.detail,
+        })),
+    })),
+  });
+});
+
+// ---- free endpoints ----
+
+app.get("/v1/methodology", async (_req, res) => {
+  try {
+    const md = await readFile(path.resolve(process.cwd(), "../../docs/methodology.md"), "utf8");
+    res.type("text/markdown").send(md);
+  } catch {
+    res.status(404).json({ error: "methodology not found" });
+  }
+});
+
+app.get("/health", (_req, res) => {
+  res.json({ ok: true, demoMode: process.env.DEMO_MODE === "true" });
+});
+
+/** OKX.AI ASP-style service manifest so the endpoint is easy to list. */
+app.get("/.well-known/veristat.json", (_req, res) => {
+  res.json({
+    name: "Veristat Score API",
+    description: "Pre-purchase verified track record for paid agent services. Pays-per-call via x402.",
+    endpoints: [
+      { path: "/v1/score/:serviceId", priceUsd: PRICE_SCORE, description: "single-service score" },
+      { path: "/v1/category/:category", priceUsd: PRICE_CATEGORY, description: "ranked category comparison" },
+      { path: "/v1/evidence/:serviceId", priceUsd: PRICE_EVIDENCE, description: "full evidence report" },
+    ],
+    paymentScheme: "x402 exact",
+    neutralityPolicy: "providers can never pay to change a score",
+  });
+});
+
+async function main(): Promise<void> {
+  await runMigrations();
+  app.listen(PORT, () => log.info("score API listening", { port: PORT, demoMode: process.env.DEMO_MODE === "true" }));
+}
+
+main().catch((err) => {
+  log.error("fatal", { err: String(err) });
+  process.exit(1);
+});
