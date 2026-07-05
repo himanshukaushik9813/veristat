@@ -49,20 +49,22 @@ export async function verifyProbe(
     }),
   );
 
-  // Integrity: charged must equal quoted (small rounding tolerance).
+  // Integrity: charged must equal quoted, and not exceed the catalog-declared
+  // price — a 402 quote above the listed price is itself an overcharge.
   if (outcome.quotedUsd !== null && outcome.chargedUsd !== null) {
-    const overcharged = outcome.chargedUsd > outcome.quotedUsd * 1.001;
+    const ceiling = Math.min(outcome.quotedUsd, outcome.declaredUsd ?? Infinity);
+    const overcharged = outcome.chargedUsd > ceiling * 1.001;
     results.push(
       result({
         tier: 1, // billing is verified against the on-chain transfer — deterministic truth
         dimension: "integrity",
         verdict: verdictOf(!overcharged),
-        expected: outcome.quotedUsd,
+        expected: ceiling,
         actual: outcome.chargedUsd,
-        groundTruth: { expected: outcome.quotedUsd },
+        groundTruth: { expected: ceiling },
         detail: overcharged
-          ? `charged $${outcome.chargedUsd} vs quoted $${outcome.quotedUsd}`
-          : "charged amount matches quote",
+          ? `charged $${outcome.chargedUsd} vs listed/quoted $${ceiling}`
+          : "charged amount matches quote and listed price",
       }),
     );
   }

@@ -416,6 +416,57 @@ export async function logApiUsage(u: {
   });
 }
 
+// ---------- anti-gaming (spec §8) ----------
+
+/**
+ * Accuracy pass counts split by whether the probe was among the first 5 a
+ * wallet ever made ("fresh") vs later ("established"). A service special-casing
+ * known probe wallets shows a significant gap between the two.
+ */
+export async function freshVsEstablishedAccuracy(serviceId: number): Promise<{
+  fresh: { pass: number; total: number };
+  established: { pass: number; total: number };
+}> {
+  const db = getDb();
+  const rows = await db.execute(sql`
+    with ranked as (
+      select p.id as probe_id,
+             row_number() over (partition by p.wallet_id order by p.id) as nth
+      from probes p
+      where p.service_id = ${serviceId} and p.wallet_id is not null
+    )
+    select case when r.nth <= 5 then 'fresh' else 'established' end as cohort,
+           count(*) filter (where v.verdict = 'pass')::int as pass,
+           count(*)::int as total
+    from verifications v
+    join ranked r on r.probe_id = v.probe_id
+    where v.service_id = ${serviceId}
+      and v.dimension = 'accuracy'
+      and v.verdict in ('pass', 'fail')
+    group by 1
+  `);
+  const out = {
+    fresh: { pass: 0, total: 0 },
+    established: { pass: 0, total: 0 },
+  };
+  for (const row of rows.rows as Array<{ cohort: string; pass: number; total: number }>) {
+    if (row.cohort === "fresh") out.fresh = { pass: Number(row.pass), total: Number(row.total) };
+    else out.established = { pass: Number(row.pass), total: Number(row.total) };
+  }
+  return out;
+}
+
+export async function recentGamingIncident(serviceId: number, withinHours = 24): Promise<boolean> {
+  const db = getDb();
+  const since = new Date(Date.now() - withinHours * 3_600_000);
+  const rows = await db
+    .select({ id: incidents.id })
+    .from(incidents)
+    .where(and(eq(incidents.serviceId, serviceId), eq(incidents.kind, "gaming_suspected"), gte(incidents.createdAt, since)))
+    .limit(1);
+  return rows.length > 0;
+}
+
 // ---------- aggregates for leaderboard/report ----------
 
 /** Latest score per active service, for the leaderboard. */

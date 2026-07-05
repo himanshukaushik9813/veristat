@@ -42,6 +42,8 @@ export interface BuiltQuery {
 export interface ProbeOutcome {
   httpStatus: number | null;
   x402Status: string;
+  /** Price listed in the service's catalog entry (what the 402 quote is checked against). */
+  declaredUsd?: number | null;
   quotedUsd: number | null;
   chargedUsd: number | null;
   rawResponse: string | null;
