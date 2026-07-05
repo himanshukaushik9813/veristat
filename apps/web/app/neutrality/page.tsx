@@ -1,4 +1,4 @@
-import { DocPage } from "../methodology/page";
+import { DocPage } from "@/components/DocPage";
 
 export const dynamic = "force-dynamic";
 
