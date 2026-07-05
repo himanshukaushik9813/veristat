@@ -44,6 +44,7 @@ export async function upsertService(entry: CatalogEntry): Promise<{ id: number; 
         paymentScheme: entry.paymentScheme,
         declaredPriceUsd: entry.declaredPriceUsd,
         metadata: entry.metadata,
+        isSelf: entry.metadata.self === true, // Veristat's own listing → COI label (spec §9)
         lastAliveAt: new Date(),
       })
       .returning({ id: services.id });

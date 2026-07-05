@@ -19,7 +19,16 @@ export function getDb(): Db {
   if (db) return db;
   const url = process.env.DATABASE_URL;
   if (url) {
-    const pool = new pg.Pool({ connectionString: url });
+    // pglite-socket serves one client at a time — default to a single pooled
+    // connection released quickly when idle, so worker/api/web can share the
+    // socket server in turns. On real Postgres set DATABASE_POOL_MAX higher.
+    const max = Number(process.env.DATABASE_POOL_MAX ?? 1);
+    const pool = new pg.Pool({
+      connectionString: url,
+      max,
+      idleTimeoutMillis: max === 1 ? 250 : 30_000,
+      allowExitOnIdle: max === 1,
+    });
     db = drizzlePg(pool, { schema });
   } else {
     const dataDir = process.env.PGLITE_DIR ?? ".pgdata";

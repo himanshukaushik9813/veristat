@@ -1,7 +1,16 @@
 import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { CatalogEntry, createLogger } from "@veristat/shared";
 
 const log = createLogger("crawler");
+
+/** Seed files live in <repo>/data; the worker may run from apps/worker. */
+function resolveSeed(p: string): string {
+  if (path.isAbsolute(p) || existsSync(p)) return p;
+  const fromRoot = path.resolve(process.cwd(), "../..", p);
+  return existsSync(fromRoot) ? fromRoot : p;
+}
 
 /**
  * Registry sources (spec §5.1). Each returns normalized catalog entries;
@@ -92,9 +101,9 @@ export function okxAspSource(seedPath = process.env.OKX_ASP_SEED ?? "data/okx-as
     async discover() {
       let raw: string;
       try {
-        raw = await readFile(seedPath, "utf8");
+        raw = await readFile(resolveSeed(seedPath), "utf8");
       } catch {
-        log.warn("okx asp seed file missing; skipping source", { seedPath });
+        log.warn("seed file missing; skipping source", { seedPath });
         return [];
       }
       const items = JSON.parse(raw) as Array<Record<string, unknown>>;

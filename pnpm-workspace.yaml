@@ -4,3 +4,4 @@ packages:
   - demo/mock-asps
 allowBuilds:
   esbuild: true
+  sharp: true
