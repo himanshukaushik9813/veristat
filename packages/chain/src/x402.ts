@@ -2,6 +2,7 @@ import { decodeEventLog, type Account } from "viem";
 import { CHAINS, type ChainKey } from "@veristat/shared";
 import { publicClient } from "./clients.js";
 import { ERC20_ABI, erc20Transfer } from "./erc20.js";
+import { withRetry } from "./retry.js";
 
 /**
  * x402 payment flow, wire-compatible with the protocol shape
@@ -233,13 +234,14 @@ export async function verifyPayment(
   const client = publicClient(opts.network);
   let receipt;
   try {
-    receipt = await client.getTransactionReceipt({ hash: txHash });
+    // The payment tx was just mined — retry so a lagging LB node doesn't reject it.
+    receipt = await withRetry(() => client.getTransactionReceipt({ hash: txHash }));
   } catch {
     return { ok: false, reason: "tx not found" };
   }
   if (receipt.status !== "success") return { ok: false, reason: "tx reverted" };
 
-  const block = await client.getBlock({ blockNumber: receipt.blockNumber });
+  const block = await withRetry(() => client.getBlock({ blockNumber: receipt.blockNumber }));
   const age = Date.now() / 1000 - Number(block.timestamp);
   if (age > (opts.maxAgeSeconds ?? 600)) return { ok: false, reason: "payment too old" };
 

@@ -82,6 +82,20 @@ honest ≈ **B+/A**, stale fails **freshness**, liar fails **accuracy**, greedy
 fails **integrity/reliability** — each verdict traceable to a pinned block,
 a contract read, and (in paid mode) a payment tx hash.
 
+## Live deployment — XLayer testnet (chainId 1952)
+
+| Contract | Address |
+|---|---|
+| EvidenceAnchor | [`0xe33f10dfb09f0c479a24555dcbcda6fc1c0bb03c`](https://www.oklink.com/xlayer-test/address/0xe33f10dfb09f0c479a24555dcbcda6fc1c0bb03c) |
+| ERC-8004 IdentityRegistry | [`0xbf6d87a126edbcc2ac31d61ff370d4a9d38373d5`](https://www.oklink.com/xlayer-test/address/0xbf6d87a126edbcc2ac31d61ff370d4a9d38373d5) |
+| ERC-8004 ValidationRegistry | [`0xb6da410e89d7e2774f0c4af9bd87bc19f93f8bc9`](https://www.oklink.com/xlayer-test/address/0xb6da410e89d7e2774f0c4af9bd87bc19f93f8bc9) |
+| MockUSDT (tUSDT, public faucet) | [`0x6292949e5ef22aaa402bd933af83384462d4711b`](https://www.oklink.com/xlayer-test/address/0x6292949e5ef22aaa402bd933af83384462d4711b) |
+
+Sample on-chain artifacts:
+- Evidence Merkle anchor (159 verification rows): [`0x7673b4…`](https://www.oklink.com/xlayer-test/tx/0x7673b46ef680f0ac28384a6524ad1b122cd2de8aa2f4b284fe4b692aa3f960f6)
+- ERC-8004 validation response (Honest Oracle, 94/100): [`0x49acc0…`](https://www.oklink.com/xlayer-test/tx/0x49acc04cb561a388e13e8a57d5225b0d461674ad246951ee8bddc804fb0a60d7)
+- x402 probe payment (caught the Greedy Oracle overcharging): every probe row on the leaderboard links its own payment tx.
+
 ## XLayer testnet deployment
 
 ```bash

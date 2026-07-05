@@ -57,7 +57,7 @@ async function freshnessResult(
     });
   }
   const lag = headAtVerify - BigInt(claimedBlock);
-  const fresh = lag <= MAX_BLOCK_LAG && lag >= -2n; // small tolerance for RPC head skew
+  const fresh = lag <= MAX_BLOCK_LAG && lag >= -15n; // load-balanced RPC nodes disagree on head by a few blocks
   return result({
     tier: 1,
     dimension: "freshness",

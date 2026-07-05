@@ -120,6 +120,11 @@ app.get("/v1/evidence/:serviceId", paid(PRICE_EVIDENCE), async (req, res) => {
   });
 });
 
+/** Probe-able echo endpoint so Veristat's own listing is scored like any other ASP (spec §9). */
+app.get("/v1/query", paid(PRICE_SCORE), (req, res) => {
+  res.json({ value: { echo: req.query.nonce ?? null }, timestamp: Math.floor(Date.now() / 1000) });
+});
+
 // ---- free endpoints ----
 
 app.get("/v1/methodology", async (_req, res) => {

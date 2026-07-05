@@ -62,12 +62,17 @@ export async function runAttestor(): Promise<void> {
       account,
     });
     await client.waitForTransactionReceipt({ hash: tx });
-    agentId = await client.readContract({
-      address: dep.identityRegistry,
-      abi: IDENTITY_ABI,
-      functionName: "agentIdByAddress",
-      args: [account.address],
-    });
+    // Lagging LB nodes return the pre-registration state for a few seconds.
+    for (let i = 0; i < 10 && agentId === 0n; i++) {
+      await new Promise((r) => setTimeout(r, 1500));
+      agentId = await client.readContract({
+        address: dep.identityRegistry,
+        abi: IDENTITY_ABI,
+        functionName: "agentIdByAddress",
+        args: [account.address],
+      });
+    }
+    if (agentId === 0n) throw new Error("agent registration not visible on RPC after retries");
     log.info("registered Veristat in ERC-8004 Identity Registry", { agentId: agentId.toString(), tx });
   }
 
@@ -75,7 +80,8 @@ export async function runAttestor(): Promise<void> {
   for (const service of services) {
     const score = await latestScore(service.id);
     if (!score || score.confidence < MIN_CONFIDENCE) continue;
-    if (await pendingAttestationForScore(score.id)) continue;
+    const existing = await pendingAttestationForScore(score.id);
+    if (existing && existing.status !== "failed") continue; // failed attempts are retried
 
     const evidenceUri = `${process.env.PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/services/${service.id}/scorecard`;
     const bundle = canonicalize({

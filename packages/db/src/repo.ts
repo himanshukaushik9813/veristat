@@ -55,7 +55,9 @@ export async function upsertService(entry: CatalogEntry): Promise<{ id: number; 
   const changed =
     svc.endpoint !== entry.endpoint ||
     svc.declaredPriceUsd !== entry.declaredPriceUsd ||
-    svc.paymentScheme !== entry.paymentScheme;
+    svc.paymentScheme !== entry.paymentScheme ||
+    svc.chain !== entry.chain ||
+    svc.category !== entry.category;
   await db
     .update(services)
     .set({
@@ -63,6 +65,8 @@ export async function upsertService(entry: CatalogEntry): Promise<{ id: number; 
       endpoint: entry.endpoint,
       declaredPriceUsd: entry.declaredPriceUsd,
       paymentScheme: entry.paymentScheme,
+      chain: entry.chain,
+      category: entry.category,
       status: "active",
       deadCrawlCount: 0,
       lastAliveAt: new Date(),

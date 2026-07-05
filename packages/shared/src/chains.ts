@@ -36,7 +36,7 @@ export const CHAINS: Record<ChainKey, ChainConfig> = {
   },
   xlayerTestnet: {
     key: "xlayerTestnet",
-    chainId: 195,
+    chainId: 1952,
     name: "X Layer Testnet",
     rpcUrl: process.env.XLAYER_TESTNET_RPC_URL ?? "https://testrpc.xlayer.tech",
     explorerTxUrl: (h) => `https://www.oklink.com/xlayer-test/tx/${h}`,

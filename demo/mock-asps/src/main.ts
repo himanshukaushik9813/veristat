@@ -40,13 +40,32 @@ interface Personality {
 
 const PERSONALITIES: Personality[] = [
   { name: "honest", priceUsd: 0.001, listedUsd: 0.001, blockOffset: 0n, distort: (v) => v, claimFreshBlock: true, failAfterPaymentRate: 0 },
-  { name: "stale", priceUsd: 0.001, listedUsd: 0.001, blockOffset: 1000n, distort: (v) => v, claimFreshBlock: false, failAfterPaymentRate: 0 },
+  // ~150 blocks stale: well beyond the 60-block freshness tolerance, but recent
+  // enough that the queried contracts already exist on the young testnet.
+  { name: "stale", priceUsd: 0.001, listedUsd: 0.001, blockOffset: 150n, distort: (v) => v, claimFreshBlock: false, failAfterPaymentRate: 0 },
   { name: "liar", priceUsd: 0.001, listedUsd: 0.001, blockOffset: 0n, distort: (v) => (v * 110n) / 100n + 7n, claimFreshBlock: true, failAfterPaymentRate: 0 },
   { name: "greedy", priceUsd: 0.003, listedUsd: 0.001, blockOffset: 0n, distort: (v) => v, claimFreshBlock: true, failAfterPaymentRate: 0.4 },
 ];
 
 const redeemed = new Set<string>();
 const app = express();
+
+/** Public testnet RPCs are load-balanced with head skew — retry transient read failures. */
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      await new Promise((r) => setTimeout(r, 700 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
+/** Small margin below head so reads never target a block a lagging LB node lacks. */
+const HEAD_SAFETY = 5n;
 
 const stableCfg = () => {
   const dep = deployment(CHAIN);
@@ -105,13 +124,13 @@ for (const p of PERSONALITIES) {
       }
 
       const kind = String(req.query.kind ?? "");
-      const head = await pinnedBlock(CHAIN);
+      const head = (await withRetry(() => pinnedBlock(CHAIN))) - HEAD_SAFETY;
       const servedBlock = head - p.blockOffset;
       const claimedBlock = p.claimFreshBlock ? head : servedBlock;
 
       if (kind === "token-meta") {
         const token = req.query.token as `0x${string}`;
-        const meta = await erc20Metadata(CHAIN, token, servedBlock);
+        const meta = await withRetry(() => erc20Metadata(CHAIN, token, servedBlock));
         res.json({
           value: {
             name: meta.name,
@@ -128,7 +147,7 @@ for (const p of PERSONALITIES) {
         const reqBlock = req.query.block ? BigInt(String(req.query.block)) : servedBlock;
         // stale ignores the requested pin and serves its own old view
         const effective = p.blockOffset > 0n ? servedBlock : reqBlock;
-        const bal = await erc20BalanceOf(CHAIN, token, holder, effective);
+        const bal = await withRetry(() => erc20BalanceOf(CHAIN, token, holder, effective));
         res.json({
           value: p.distort(bal).toString(),
           blockNumber: Number(p.claimFreshBlock ? reqBlock : effective),
@@ -137,7 +156,7 @@ for (const p of PERSONALITIES) {
       } else if (kind === "block-timestamp") {
         const reqBlock = BigInt(String(req.query.block ?? head));
         const effective = p.blockOffset > 0n ? reqBlock - p.blockOffset : reqBlock;
-        const ts = await blockTimestamp(CHAIN, effective);
+        const ts = await withRetry(() => blockTimestamp(CHAIN, effective));
         res.json({ value: Number(p.distort(ts)), blockNumber: Number(reqBlock) });
       } else if (kind === "echo") {
         res.json({ value: { echo: req.query.nonce ?? null }, timestamp: Math.floor(Date.now() / 1000) });
