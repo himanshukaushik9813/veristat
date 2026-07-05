@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.next/
+.turbo/
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+.pgdata/
+contracts/out/
+contracts/cache/
+contracts/broadcast/**/dry-run/
+coverage/
+.DS_Store

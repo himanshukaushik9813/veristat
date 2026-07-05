@@ -1,0 +1,6 @@
+packages:
+  - packages/*
+  - apps/*
+  - demo/mock-asps
+allowBuilds:
+  esbuild: true

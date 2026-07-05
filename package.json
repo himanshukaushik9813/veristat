@@ -1,0 +1,20 @@
+{
+  "name": "veristat",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Veristat — independent verification layer for the agent economy. Probes paid agent services, verifies against on-chain truth, publishes leaderboard, paid score API, and on-chain attestations on XLayer.",
+  "packageManager": "pnpm@11.10.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter './packages/**' --filter './apps/**' build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "db:migrate": "pnpm --filter @veristat/db migrate",
+    "worker": "pnpm --filter @veristat/worker dev",
+    "score-api": "pnpm --filter @veristat/score-api dev",
+    "web": "pnpm --filter @veristat/web dev",
+    "mock-asps": "pnpm --filter @veristat/mock-asps dev"
+  }
+}
