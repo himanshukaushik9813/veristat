@@ -2,8 +2,9 @@ import Link from "next/link";
 import { dailyLedgerSeries, globalStats, lastAnchor, recentActivity } from "@veristat/db";
 import { CHAINS, type ChainKey } from "@veristat/shared";
 import { ensureDb } from "@/lib/data";
-import { Sparkline } from "@/components/Sparkline";
 import { Pipeline } from "@/components/Pipeline";
+import { TrendArea } from "@/components/TrendArea";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 
 export const dynamic = "force-dynamic";
 
@@ -31,11 +32,36 @@ function probeStatus(verdicts: Array<{ dimension: string; verdict: string }>): {
   return { s: "unverified", label: "Unverified" };
 }
 
-/** Normalize a raw count series to the 0–100 domain the Sparkline expects. */
-function norm(series: number[]): number[] {
-  const max = Math.max(...series, 1);
-  return series.map((v) => (v / max) * 100);
-}
+const ICON_STROKE = { stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round", fill: "none" } as const;
+
+const STAT_ICONS: Record<string, React.ReactNode> = {
+  probes: (
+    <svg width="20" height="20" viewBox="0 0 24 24">
+      <circle cx="10.5" cy="10.5" r="6.5" {...ICON_STROKE} />
+      <path d="M15.5 15.5 21 21" {...ICON_STROKE} strokeWidth={2.2} />
+    </svg>
+  ),
+  verdicts: (
+    <svg width="20" height="20" viewBox="0 0 24 24">
+      <path d="M12 2.5 19.5 6v5.5c0 4.3-3 7.5-7.5 9-4.5-1.5-7.5-4.7-7.5-9V6L12 2.5Z" {...ICON_STROKE} />
+      <path d="M8.8 11.6l2.3 2.3 4.2-4.6" {...ICON_STROKE} strokeWidth={2} />
+    </svg>
+  ),
+  incidents: (
+    <svg width="20" height="20" viewBox="0 0 24 24">
+      <path d="M12 3 22 20H2L12 3Z" {...ICON_STROKE} />
+      <path d="M12 10v4.5" {...ICON_STROKE} strokeWidth={2} />
+      <circle cx="12" cy="17.2" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  spend: (
+    <svg width="20" height="20" viewBox="0 0 24 24">
+      <rect x="2.5" y="6" width="19" height="13" rx="2.5" {...ICON_STROKE} />
+      <path d="M2.5 10h19" {...ICON_STROKE} />
+      <circle cx="16.5" cy="14.8" r="1.8" {...ICON_STROKE} />
+    </svg>
+  ),
+};
 
 export default async function Landing() {
   await ensureDb();
@@ -82,52 +108,89 @@ export default async function Landing() {
 
       <div className="panels">
         <div className="stat-panel">
-          <div className="stat">
-            <div className="k">Paid Probes</div>
-            <div className="v">{stats.probes.toLocaleString()}</div>
-            <div className="cap">On-chain payments</div>
-            <div className="spark">
-              <Sparkline values={norm(series.probes)} width={150} height={34} />
-            </div>
-          </div>
-          <div className="stat">
-            <div className="k">Verified Verdicts</div>
-            <div className="v">{stats.verdicts.toLocaleString()}</div>
-            <div className="cap">Merkle-anchored</div>
-            <div className="spark">
-              <Sparkline values={norm(series.verdicts)} width={150} height={34} />
-            </div>
-          </div>
-          <div className="stat">
-            <div className="k">Incidents Caught</div>
-            <div className="v">{stats.incidents.toLocaleString()}</div>
-            <div className="cap">Wrong, stale &amp; overcharges</div>
-            <div className="spark">
-              <Sparkline values={norm(series.incidents)} width={150} height={34} />
-            </div>
-          </div>
-          <div className="stat">
-            <div className="k">$ Spent Probing</div>
-            <div className="v">${stats.usdSpent.toFixed(2)}</div>
-            <div className="cap">Across {stats.servicesScored} services</div>
-            <div className="spark">
-              <Sparkline values={norm(series.usdSpent)} width={150} height={34} />
-            </div>
-          </div>
+          {(
+            [
+              {
+                id: "probes",
+                k: "Paid Probes",
+                v: <AnimatedNumber value={stats.probes} />,
+                cap: "On-chain payments",
+                series: series.probes,
+                color: "var(--accent)",
+              },
+              {
+                id: "verdicts",
+                k: "Verified Verdicts",
+                v: <AnimatedNumber value={stats.verdicts} />,
+                cap: "Merkle-anchored",
+                series: series.verdicts,
+                color: "#22c55e",
+              },
+              {
+                id: "incidents",
+                k: "Incidents Caught",
+                v: <AnimatedNumber value={stats.incidents} />,
+                cap: "Wrong, stale & overcharges",
+                series: series.incidents,
+                color: "#ec835a",
+              },
+              {
+                id: "spend",
+                k: "$ Spent Probing",
+                v: <AnimatedNumber value={stats.usdSpent} decimals={2} prefix="$" />,
+                cap: `Across ${stats.servicesScored} services`,
+                series: series.usdSpent,
+                color: "#8b9cff",
+              },
+            ] as const
+          ).map((s) => {
+            const today = s.series[s.series.length - 1] ?? 0;
+            return (
+              <div className="stat" key={s.id} style={{ ["--stat-c" as string]: s.color }}>
+                <div className="stat-head">
+                  <span className="stat-icon">{STAT_ICONS[s.id]}</span>
+                  <span className="k">{s.k}</span>
+                </div>
+                <div className="v">{s.v}</div>
+                <div className="cap">
+                  {s.cap}
+                  {today > 0 && (
+                    <span className="delta">
+                      +{s.id === "spend" ? `$${today.toFixed(2)}` : Math.round(today).toLocaleString()} today
+                    </span>
+                  )}
+                </div>
+                <div className="spark">
+                  <TrendArea values={s.series} id={s.id} color={s.color} />
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         <div className="activity-panel">
           <div className="head">
-            <span className="title">Live Probe Activity</span>
+            <span className="title">
+              <span className="live-chip">
+                <span className="dot" aria-hidden />
+                LIVE
+              </span>
+              Probe Activity
+            </span>
             <Link href="/leaderboard#activity">View all →</Link>
           </div>
-          {activity.map((a) => {
+          {activity.map((a, i) => {
             const status = probeStatus(a.verdicts);
             const link = a.paymentTxHash ? txLink(a.paymentChain, a.paymentTxHash) : null;
             return (
-              <div className="row" key={a.probeId}>
+              <div className="row" key={a.probeId} style={{ animationDelay: `${i * 90}ms` }}>
                 <span className="ago">{ago(a.startedAt)}</span>
                 <Link className="svc" href={`/service/${a.serviceId}`}>
+                  <span
+                    className="svc-dot"
+                    style={{ background: `hsl(${(a.serviceId * 67) % 360} 75% 62%)` }}
+                    aria-hidden
+                  />
                   {a.serviceName}
                 </Link>
                 <span className="tpl">{a.templateId}</span>
@@ -150,6 +213,18 @@ export default async function Landing() {
       </div>
 
       <div className="anchor-bar">
+        <span className="anchor-icon" aria-hidden>
+          <svg width="22" height="22" viewBox="0 0 24 24">
+            <path
+              d="M12 2.5 19.5 6v5.5c0 4.3-3 7.5-7.5 9-4.5-1.5-7.5-4.7-7.5-9V6L12 2.5Z"
+              stroke="var(--accent)"
+              strokeWidth="1.7"
+              strokeLinejoin="round"
+              fill="rgba(109,126,248,0.10)"
+            />
+            <path d="M8.8 11.6l2.3 2.3 4.2-4.6" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </svg>
+        </span>
         <span className="lead">All evidence Merkle-anchored on XLayer Testnet</span>
         <span className="kv">
           Latest Anchor Tx{" "}
@@ -167,6 +242,11 @@ export default async function Landing() {
         <span className="kv">
           Time <b>{anchor ? ago(anchor.createdAt) : "—"}</b>
         </span>
+        {anchor?.status === "confirmed" && (
+          <span className="status-chip" data-s="correct">
+            ✓ Confirmed
+          </span>
+        )}
         {anchorLink && (
           <a className="explorer" href={anchorLink} target="_blank" rel="noreferrer">
             View on OKLink Explorer →
