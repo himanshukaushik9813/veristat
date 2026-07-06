@@ -207,38 +207,107 @@ h2 { font-size: 17px; margin: 32px 0 12px; }
   .hero { padding: 56px 28px; }
 }
 
-/* ---- pipeline ---- */
+/* ---- pipeline: 3D isometric pedestals + animated data flow ---- */
 .pipeline {
   display: grid; grid-template-columns: repeat(6, 1fr);
-  gap: 0; margin: 32px 0 48px; position: relative;
+  gap: 0; margin: 44px 0 56px; position: relative;
 }
 .pipeline .step { text-align: center; padding: 0 8px; position: relative; }
 .pipeline .step .name {
   font-size: 14px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
 }
-.pipeline .step .cap { font-size: 12px; color: var(--text-muted); line-height: 1.4; margin: 4px 0 16px; min-height: 34px; }
-.pipeline .step .tile {
-  width: 84px; height: 84px; margin: 0 auto;
-  display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--border); border-radius: 16px;
-  background: linear-gradient(160deg, var(--surface-2), var(--surface-1) 70%);
-  box-shadow: 0 0 28px rgba(109, 126, 248, 0.16), inset 0 1px 0 rgba(255,255,255,0.04);
+.pipeline .step .name .num { color: var(--accent); font-family: var(--mono); margin-right: 2px; }
+.pipeline .step .cap { font-size: 12px; color: var(--text-muted); line-height: 1.4; margin: 4px 0 14px; min-height: 34px; }
+
+/* pedestal: stacked isometric glass plates with a floating icon above */
+.pipeline .pedestal {
+  position: relative; z-index: 1;
+  width: 130px; height: 132px; margin: 0 auto;
+  perspective: 700px;
 }
-.pipeline .step .tile svg { display: block; }
-/* connecting line with dot nodes */
-.pipeline .step:not(:last-child) .tile::after { content: none; }
+.pipeline .plates {
+  position: absolute; left: 50%; bottom: 26px;
+  width: 86px; height: 86px;
+  transform: translateX(-50%) rotateX(58deg) rotateZ(45deg);
+  transform-style: preserve-3d;
+}
+.pipeline .plate {
+  position: absolute; inset: 0; border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--glow) 45%, transparent);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--glow) 14%, rgba(16, 19, 36, 0.92)), rgba(8, 10, 22, 0.96));
+  box-shadow:
+    0 0 22px color-mix(in srgb, var(--glow) 22%, transparent),
+    inset 0 0 26px color-mix(in srgb, var(--glow) 14%, transparent);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pipeline .plate.p1 { transform: translateZ(30px); }
+.pipeline .plate.p2 { transform: translateZ(15px) scale(1.06); opacity: 0.65; }
+.pipeline .plate.p3 { transform: translateZ(0) scale(1.12); opacity: 0.35; }
+.pipeline .step:hover .plate.p1 { transform: translateZ(42px); }
+.pipeline .step:hover .plate.p2 { transform: translateZ(20px) scale(1.06); }
+
+/* the icon hovers above the top plate, gently bobbing */
+.pipeline .icon {
+  position: absolute; left: 50%; top: 2px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--glow) 65%, transparent))
+          drop-shadow(0 14px 18px rgba(0, 0, 0, 0.6));
+  animation: bob 3.6s ease-in-out infinite;
+  transition: filter 0.25s ease;
+}
+.pipeline .icon svg { display: block; }
+.pipeline .step:hover .icon {
+  filter: drop-shadow(0 0 20px var(--glow)) drop-shadow(0 16px 20px rgba(0, 0, 0, 0.6));
+}
+@keyframes bob {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-7px); }
+}
+
+/* light pool under the pedestal */
+.pipeline .pool {
+  position: absolute; left: 50%; bottom: -4px;
+  width: 110px; height: 30px; transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--glow) 30%, transparent), transparent 70%);
+  filter: blur(4px); pointer-events: none;
+  transition: opacity 0.25s ease; opacity: 0.8;
+}
+.pipeline .step:hover .pool { opacity: 1.4; }
+
+/* connector: gradient rail + moving light pulses */
 .pipeline .connector {
-  position: absolute; left: 8.33%; right: 8.33%; bottom: 41px; height: 2px;
-  background: linear-gradient(90deg, var(--accent-dim), var(--accent), var(--accent-dim));
-  opacity: 0.55; z-index: 0;
+  position: absolute; left: 8.33%; right: 8.33%; bottom: 62px; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-dim) 8%, var(--accent) 50%, var(--accent-dim) 92%, transparent);
+  opacity: 0.5; z-index: 0; overflow: visible;
 }
-.pipeline .step .tile { position: relative; z-index: 1; }
+.pipeline .connector .flow {
+  position: absolute; inset: -1px 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 26px,
+    rgba(240, 244, 255, 0.9) 26px 34px
+  );
+  background-size: 60px 100%;
+  mix-blend-mode: screen;
+  animation: flow 1.6s linear infinite;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+@keyframes flow { from { background-position: 0 0; } to { background-position: 60px 0; } }
+
 .pipeline .node {
-  position: absolute; bottom: 37px; width: 10px; height: 10px; border-radius: 50%;
-  background: var(--accent); box-shadow: 0 0 10px var(--accent); z-index: 1;
+  position: absolute; right: -5px; bottom: 58px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 12px var(--accent); z-index: 1;
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pipeline .icon, .pipeline .connector .flow, .pipeline .node { animation: none; }
 }
 @media (max-width: 900px) {
-  .pipeline { grid-template-columns: repeat(3, 1fr); gap: 24px 0; }
+  .pipeline { grid-template-columns: repeat(3, 1fr); gap: 28px 0; }
   .pipeline .connector, .pipeline .node { display: none; }
 }
 

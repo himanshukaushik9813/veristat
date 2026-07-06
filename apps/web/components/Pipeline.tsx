@@ -1,45 +1,67 @@
-/** The six-step verification pipeline diagram on the landing page. Pure presentational. */
+/**
+ * The six-step verification pipeline — 3D isometric pedestals echoing the hero
+ * artwork's stacked-plate tower: CSS preserve-3d plates, floating glowing
+ * icons, and an animated data-flow connector. Pure CSS + inline SVG.
+ */
 
-const stroke = { stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round", fill: "none" } as const;
+const stroke = { stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round", strokeLinejoin: "round", fill: "none" } as const;
 
-const ICONS: Record<string, React.ReactNode> = {
-  discover: (
-    <svg width="34" height="34" viewBox="0 0 34 34" style={{ color: "var(--accent)" }}>
-      <circle cx="15" cy="15" r="8.5" {...stroke} />
-      <path d="M21.5 21.5 28 28" {...stroke} strokeWidth={2.4} />
-    </svg>
-  ),
-  pay: (
-    <svg width="34" height="34" viewBox="0 0 34 34" style={{ color: "var(--good)" }}>
-      <rect x="4" y="9" width="26" height="17" rx="3" {...stroke} />
-      <path d="M4 14h26" {...stroke} />
-      <circle cx="23" cy="20.5" r="2.4" {...stroke} />
-    </svg>
-  ),
-  probe: (
-    <svg width="34" height="34" viewBox="0 0 34 34" style={{ color: "var(--accent)" }}>
-      <path d="M3 18h6l3-9 5 16 4-11 2 4h8" {...stroke} strokeWidth={2.2} />
-    </svg>
-  ),
-  verify: (
-    <svg width="34" height="34" viewBox="0 0 34 34" style={{ color: "var(--good)" }}>
-      <path d="M17 3.5 27.5 8v8c0 6-4.3 10.5-10.5 12.5C10.8 26.5 6.5 22 6.5 16V8L17 3.5Z" {...stroke} />
-      <path d="M12.5 16.5l3.2 3.2 6-6.5" {...stroke} strokeWidth={2.2} />
-    </svg>
-  ),
-  score: (
-    <svg width="34" height="34" viewBox="0 0 34 34" style={{ color: "var(--warning)" }}>
-      <path d="M8 27V15" {...stroke} strokeWidth={3.4} style={{ color: "var(--good)" }} />
-      <path d="M17 27V7" {...stroke} strokeWidth={3.4} style={{ color: "var(--warning)" }} />
-      <path d="M26 27V19" {...stroke} strokeWidth={3.4} style={{ color: "var(--accent)" }} />
-    </svg>
-  ),
-  publish: (
-    <svg width="34" height="34" viewBox="0 0 34 34" style={{ color: "var(--accent)" }}>
-      <path d="M17 4 29 10.5v13L17 30 5 23.5v-13L17 4Z" {...stroke} />
-      <path d="M17 4v13M5 10.5l12 6.5M29 10.5l-12 6.5M17 30V17" {...stroke} strokeWidth={1.4} opacity={0.7} />
-    </svg>
-  ),
+const ICONS: Record<string, { color: string; svg: React.ReactNode }> = {
+  discover: {
+    color: "#6d7ef8",
+    svg: (
+      <svg width="38" height="38" viewBox="0 0 34 34">
+        <circle cx="15" cy="15" r="8.5" {...stroke} />
+        <path d="M21.5 21.5 28 28" {...stroke} strokeWidth={2.4} />
+      </svg>
+    ),
+  },
+  pay: {
+    color: "#22c55e",
+    svg: (
+      <svg width="38" height="38" viewBox="0 0 34 34">
+        <rect x="4" y="9" width="26" height="17" rx="3" {...stroke} />
+        <path d="M4 14h26" {...stroke} />
+        <circle cx="23" cy="20.5" r="2.4" {...stroke} />
+      </svg>
+    ),
+  },
+  probe: {
+    color: "#8b9cff",
+    svg: (
+      <svg width="38" height="38" viewBox="0 0 34 34">
+        <path d="M3 18h6l3-9 5 16 4-11 2 4h8" {...stroke} strokeWidth={2.2} />
+      </svg>
+    ),
+  },
+  verify: {
+    color: "#22c55e",
+    svg: (
+      <svg width="38" height="38" viewBox="0 0 34 34">
+        <path d="M17 3.5 27.5 8v8c0 6-4.3 10.5-10.5 12.5C10.8 26.5 6.5 22 6.5 16V8L17 3.5Z" {...stroke} />
+        <path d="M12.5 16.5l3.2 3.2 6-6.5" {...stroke} strokeWidth={2.2} />
+      </svg>
+    ),
+  },
+  score: {
+    color: "#fab219",
+    svg: (
+      <svg width="38" height="38" viewBox="0 0 34 34">
+        <path d="M8 27V15" stroke="#22c55e" strokeWidth={3.4} strokeLinecap="round" fill="none" />
+        <path d="M17 27V7" stroke="#fab219" strokeWidth={3.4} strokeLinecap="round" fill="none" />
+        <path d="M26 27V19" stroke="#6d7ef8" strokeWidth={3.4} strokeLinecap="round" fill="none" />
+      </svg>
+    ),
+  },
+  publish: {
+    color: "#a855f7",
+    svg: (
+      <svg width="38" height="38" viewBox="0 0 34 34">
+        <path d="M17 4 29 10.5v13L17 30 5 23.5v-13L17 4Z" {...stroke} />
+        <path d="M17 4v13M5 10.5l12 6.5M29 10.5l-12 6.5M17 30V17" {...stroke} strokeWidth={1.4} opacity={0.7} />
+      </svg>
+    ),
+  },
 };
 
 const STEPS = [
@@ -54,17 +76,32 @@ const STEPS = [
 export function Pipeline() {
   return (
     <div className="pipeline">
-      <div className="connector" aria-hidden />
-      {STEPS.map((s, i) => (
-        <div className="step" key={s.id}>
-          <div className="name">{s.name}</div>
-          <div className="cap">{s.cap}</div>
-          <div className="tile">{ICONS[s.id]}</div>
-          {i < STEPS.length - 1 && (
-            <span className="node" style={{ right: "-5px" }} aria-hidden />
-          )}
-        </div>
-      ))}
+      <div className="connector" aria-hidden>
+        <span className="flow" />
+      </div>
+      {STEPS.map((s, i) => {
+        const icon = ICONS[s.id]!;
+        return (
+          <div className="step" key={s.id}>
+            <div className="name">
+              <span className="num">{i + 1}.</span> {s.name}
+            </div>
+            <div className="cap">{s.cap}</div>
+            <div className="pedestal" style={{ ["--glow" as string]: icon.color }}>
+              <div className="plates" aria-hidden>
+                <span className="plate p3" />
+                <span className="plate p2" />
+                <span className="plate p1" />
+              </div>
+              <div className="icon" style={{ color: icon.color, animationDelay: `${i * 0.45}s` }}>
+                {icon.svg}
+              </div>
+              <span className="pool" aria-hidden />
+            </div>
+            {i < STEPS.length - 1 && <span className="node" aria-hidden />}
+          </div>
+        );
+      })}
     </div>
   );
 }
