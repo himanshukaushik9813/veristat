@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { globalStats, leaderboard, recentActivity, scoreHistory } from "@veristat/db";
+import { dailyLedgerSeries, globalStats, lastAnchor, recentActivity } from "@veristat/db";
 import { CHAINS, type ChainKey } from "@veristat/shared";
-import { ensureDb, fmt, gradeBand } from "@/lib/data";
+import { ensureDb } from "@/lib/data";
 import { Sparkline } from "@/components/Sparkline";
+import { Pipeline } from "@/components/Pipeline";
 
 export const dynamic = "force-dynamic";
 
@@ -11,172 +12,154 @@ function txLink(chain: string | null, hash: string): string | null {
   return c ? c.explorerTxUrl(hash) : null;
 }
 
-export default async function Leaderboard() {
-  await ensureDb();
-  const [rows, stats, activity] = await Promise.all([leaderboard(), globalStats(), recentActivity(10)]);
-  const categories = [...new Set(rows.map((r) => r.service.category))];
+function ago(date: Date | string): string {
+  const s = Math.max(1, Math.floor((Date.now() - new Date(date).getTime()) / 1000));
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
 
-  const histories = new Map<number, number[]>();
-  for (const row of rows) {
-    const h = await scoreHistory(row.service.id, 40);
-    histories.set(
-      row.service.id,
-      h.map((s) => s.composite).reverse(),
-    );
-  }
+/** Map a probe's verdicts to a single landing-feed status chip. */
+function probeStatus(verdicts: Array<{ dimension: string; verdict: string }>): { s: string; label: string } {
+  const fail = (d: string) => verdicts.some((v) => v.dimension === d && v.verdict === "fail");
+  if (fail("accuracy")) return { s: "incorrect", label: "Incorrect" };
+  if (fail("freshness")) return { s: "stale", label: "Stale" };
+  if (fail("integrity")) return { s: "overcharge", label: "Overcharge" };
+  if (fail("reliability")) return { s: "failed", label: "Failed" };
+  if (verdicts.some((v) => v.verdict === "pass")) return { s: "correct", label: "✓ Correct" };
+  return { s: "unverified", label: "Unverified" };
+}
+
+/** Normalize a raw count series to the 0–100 domain the Sparkline expects. */
+function norm(series: number[]): number[] {
+  const max = Math.max(...series, 1);
+  return series.map((v) => (v / max) * 100);
+}
+
+export default async function Landing() {
+  await ensureDb();
+  const [stats, activity, anchor, series] = await Promise.all([
+    globalStats(),
+    recentActivity(5),
+    lastAnchor(),
+    dailyLedgerSeries(14),
+  ]);
+  const anchorTx = anchor?.txHash ?? null;
+  const anchorLink = anchorTx ? txLink(anchor!.chain, anchorTx) : null;
 
   return (
-    <main>
+    <main className="landing">
       <section className="hero">
-        <h1>Trust, verified with money.</h1>
+        <h1>
+          Trust,
+          <br />
+          <span className="accent">verified</span> with money.
+        </h1>
         <p className="sub">
-          Veristat pays agent services real x402 payments, checks every answer against on-chain
-          ground truth, and anchors the evidence on XLayer. Providers can never pay to change a
-          score — only be more accurate.
+          Veristat adversarially probes paid AI agent services, verifies every answer against
+          on-chain truth, and publishes cryptographic proof.
         </p>
-        <div className="cards">
-          <div className="card">
-            <div className="k">Paid probes</div>
-            <div className="v">{stats.probes.toLocaleString()} <small>{stats.paymentTxs} on-chain payments</small></div>
-          </div>
-          <div className="card">
-            <div className="k">Verified verdicts</div>
-            <div className="v">{stats.verdicts.toLocaleString()} <small>{stats.anchoredLeaves} Merkle-anchored</small></div>
-          </div>
-          <div className="card">
-            <div className="k">Incidents caught</div>
-            <div className="v">{stats.incidents.toLocaleString()} <small>wrong, stale &amp; overcharges</small></div>
-          </div>
-          <div className="card">
-            <div className="k">Spent probing</div>
-            <div className="v">${stats.usdSpent.toFixed(3)} <small>{stats.servicesScored} services scored</small></div>
-          </div>
-        </div>
+        <Link href="/docs" className="btn-primary lg">
+          Get Early Access <span aria-hidden>↗</span>
+        </Link>
       </section>
 
-      <h1>Agent service leaderboard</h1>
-      <p className="sub">
-        Live paid agent services, adversarially probed and verified against on-chain ground
-        truth. Every score links to its evidence.
-      </p>
+      <Pipeline />
 
-      {categories.map((category) => (
-        <section key={category}>
-          <h2>{category}</h2>
-          <table className="list">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Service</th>
-                <th>Grade</th>
-                <th className="num">Score</th>
-                <th>Trend</th>
-                <th className="num">Accuracy</th>
-                <th className="num">Confidence</th>
-                <th>Tier</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows
-                .filter((r) => r.service.category === category)
-                .map((r, i) => (
-                  <tr key={r.service.id}>
-                    <td className="num">{i + 1}</td>
-                    <td>
-                      <Link href={`/service/${r.service.id}`}>{r.service.name}</Link>{" "}
-                      {r.service.isSelf && <span className="badge-coi">Veristat itself — COI</span>}
-                    </td>
-                    <td>
-                      {r.score ? (
-                        <span className="grade" data-band={gradeBand(r.score.grade)}>
-                          {r.score.grade}
-                        </span>
-                      ) : (
-                        <span className="confidence">unscored</span>
-                      )}
-                    </td>
-                    <td className="num">{fmt(r.score?.composite)}</td>
-                    <td>
-                      <Sparkline values={histories.get(r.service.id) ?? []} />
-                    </td>
-                    <td className="num">
-                      {r.score?.accuracy === null ? (
-                        <span className="confidence" title="Tier 3: output cannot be objectively verified">
-                          not verified
-                        </span>
-                      ) : (
-                        fmt(r.score?.accuracy, 0)
-                      )}
-                    </td>
-                    <td className="num">{r.score ? `${Math.round(r.score.confidence * 100)}%` : "—"}</td>
-                    <td>{r.score && <span className="tier">T{r.score.dominantTier}</span>}</td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </section>
-      ))}
-      {rows.length === 0 && (
-        <p className="sub">
-          Catalog is empty — run <code>pnpm --filter @veristat/worker crawl</code> to discover services.
-        </p>
-      )}
+      <div className="panels">
+        <div className="stat-panel">
+          <div className="stat">
+            <div className="k">Paid Probes</div>
+            <div className="v">{stats.probes.toLocaleString()}</div>
+            <div className="cap">On-chain payments</div>
+            <div className="spark">
+              <Sparkline values={norm(series.probes)} width={150} height={34} />
+            </div>
+          </div>
+          <div className="stat">
+            <div className="k">Verified Verdicts</div>
+            <div className="v">{stats.verdicts.toLocaleString()}</div>
+            <div className="cap">Merkle-anchored</div>
+            <div className="spark">
+              <Sparkline values={norm(series.verdicts)} width={150} height={34} />
+            </div>
+          </div>
+          <div className="stat">
+            <div className="k">Incidents Caught</div>
+            <div className="v">{stats.incidents.toLocaleString()}</div>
+            <div className="cap">Wrong, stale &amp; overcharges</div>
+            <div className="spark">
+              <Sparkline values={norm(series.incidents)} width={150} height={34} />
+            </div>
+          </div>
+          <div className="stat">
+            <div className="k">$ Spent Probing</div>
+            <div className="v">${stats.usdSpent.toFixed(2)}</div>
+            <div className="cap">Across {stats.servicesScored} services</div>
+            <div className="spark">
+              <Sparkline values={norm(series.usdSpent)} width={150} height={34} />
+            </div>
+          </div>
+        </div>
 
-      {activity.length > 0 && (
-        <section>
-          <h2>Live probe activity</h2>
-          <p className="sub">Latest adversarial probes — every row paid for on-chain and independently verifiable.</p>
-          <table className="list">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Service</th>
-                <th>Probe</th>
-                <th>Verdicts</th>
-                <th className="num">Paid</th>
-                <th className="num">Latency</th>
-                <th>Payment tx</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activity.map((a) => {
-                const link = a.paymentTxHash ? txLink(a.paymentChain, a.paymentTxHash) : null;
-                return (
-                  <tr key={a.probeId}>
-                    <td className="confidence">
-                      {new Date(a.startedAt).toLocaleTimeString("en-US", { hour12: false })}
-                    </td>
-                    <td>
-                      <Link href={`/service/${a.serviceId}`}>{a.serviceName}</Link>
-                    </td>
-                    <td>
-                      <code>{a.templateId}</code>
-                    </td>
-                    <td>
-                      {a.verdicts.map((v, i) => (
-                        <span key={i} className="verdict" data-v={v.verdict} title={v.dimension} style={{ marginRight: 4 }}>
-                          {v.dimension.slice(0, 3)}:{v.verdict === "pass" ? "✓" : v.verdict === "fail" ? "✗" : "–"}
-                        </span>
-                      ))}
-                    </td>
-                    <td className="num">{a.chargedUsd != null ? `$${a.chargedUsd.toFixed(4)}` : "—"}</td>
-                    <td className="num">{a.latencyMs != null ? `${a.latencyMs} ms` : "—"}</td>
-                    <td>
-                      {link && a.paymentTxHash ? (
-                        <a href={link} target="_blank" rel="noreferrer">
-                          <code>{a.paymentTxHash.slice(0, 10)}…</code>
-                        </a>
-                      ) : (
-                        <span className="confidence">—</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </section>
-      )}
+        <div className="activity-panel">
+          <div className="head">
+            <span className="title">Live Probe Activity</span>
+            <Link href="/leaderboard#activity">View all →</Link>
+          </div>
+          {activity.map((a) => {
+            const status = probeStatus(a.verdicts);
+            const link = a.paymentTxHash ? txLink(a.paymentChain, a.paymentTxHash) : null;
+            return (
+              <div className="row" key={a.probeId}>
+                <span className="ago">{ago(a.startedAt)}</span>
+                <Link className="svc" href={`/service/${a.serviceId}`}>
+                  {a.serviceName}
+                </Link>
+                <span className="tpl">{a.templateId}</span>
+                <span className="status-chip" data-s={status.s}>
+                  {status.label}
+                </span>
+                <span className="amt">
+                  {a.chargedUsd != null ? `$${a.chargedUsd.toFixed(4)}` : "—"}{" "}
+                  {link && (
+                    <a href={link} target="_blank" rel="noreferrer" title="payment tx on OKLink">
+                      ↗
+                    </a>
+                  )}
+                </span>
+              </div>
+            );
+          })}
+          {activity.length === 0 && <p className="sub">No probes yet — start the worker.</p>}
+        </div>
+      </div>
+
+      <div className="anchor-bar">
+        <span className="lead">All evidence Merkle-anchored on XLayer Testnet</span>
+        <span className="kv">
+          Latest Anchor Tx{" "}
+          {anchorTx && anchorLink ? (
+            <a href={anchorLink} target="_blank" rel="noreferrer">
+              {anchorTx.slice(0, 6)}…{anchorTx.slice(-4)}
+            </a>
+          ) : (
+            <b>pending</b>
+          )}
+        </span>
+        <span className="kv">
+          Leaves <b>{anchor?.leafCount ?? 0}</b>
+        </span>
+        <span className="kv">
+          Time <b>{anchor ? ago(anchor.createdAt) : "—"}</b>
+        </span>
+        {anchorLink && (
+          <a className="explorer" href={anchorLink} target="_blank" rel="noreferrer">
+            View on OKLink Explorer →
+          </a>
+        )}
+      </div>
     </main>
   );
 }

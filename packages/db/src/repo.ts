@@ -510,6 +510,40 @@ export async function recentActivity(limit = 12): Promise<
   }));
 }
 
+/** Daily ledger totals for the last `days` days — real data behind the landing sparklines. */
+export async function dailyLedgerSeries(days = 14): Promise<{
+  probes: number[];
+  verdicts: number[];
+  incidents: number[];
+  usdSpent: number[];
+}> {
+  const db = getDb();
+  const result = await db.execute(sql`
+    with days as (
+      select generate_series(
+        date_trunc('day', now()) - make_interval(days => ${days - 1}),
+        date_trunc('day', now()),
+        interval '1 day'
+      ) as d
+    )
+    select
+      days.d,
+      (select count(*) from probes p where date_trunc('day', p.started_at) = days.d)::int as probes,
+      (select count(*) from verifications v where date_trunc('day', v.created_at) = days.d)::int as verdicts,
+      (select count(*) from incidents i where date_trunc('day', i.created_at) = days.d)::int as incidents,
+      (select coalesce(sum(p.charged_usd), 0) from probes p where date_trunc('day', p.started_at) = days.d) as usd_spent
+    from days
+    order by days.d
+  `);
+  const rows = result.rows as Array<{ probes: number; verdicts: number; incidents: number; usd_spent: unknown }>;
+  return {
+    probes: rows.map((r) => Number(r.probes)),
+    verdicts: rows.map((r) => Number(r.verdicts)),
+    incidents: rows.map((r) => Number(r.incidents)),
+    usdSpent: rows.map((r) => Number(r.usd_spent)),
+  };
+}
+
 // ---------- degradation alerts ----------
 
 export async function createAlertSubscription(s: {
