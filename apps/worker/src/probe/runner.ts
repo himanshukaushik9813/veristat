@@ -3,11 +3,14 @@ import { createLogger, computeScore, type ChainKey, type ServiceCategory } from 
 import { payAndFetch } from "@veristat/chain";
 import {
   appendScore,
+  getService,
   insertIncident,
   insertProbe,
   insertVerification,
+  latestScore,
   observationsForService,
 } from "@veristat/db";
+import { fireAlerts } from "../alerts/notifier.js";
 import { verifyProbe } from "../verify/engine.js";
 import { liveReader } from "../verify/reader.js";
 import { HONEYPOTS, HONEYPOT_RATE, TEMPLATES_BY_CATEGORY } from "../verify/templates.js";
@@ -132,7 +135,16 @@ export async function probeService(service: ServiceRow): Promise<{ probeId: numb
       reliability: "settlement_failure",
     };
     const kind = kindByDimension[v.dimension];
-    if (kind) await insertIncident(service.id, kind, v.detail, [probeId]);
+    if (kind) {
+      await insertIncident(service.id, kind, v.detail, [probeId]);
+      await fireAlerts({
+        kind: "incident",
+        service: { id: service.id, name: service.name },
+        incidentKind: kind,
+        summary: v.detail,
+        probeIds: [probeId],
+      });
+    }
   }
 
   await recomputeScore(service.id, category);
@@ -158,6 +170,22 @@ export async function recomputeScore(serviceId: number, category: ServiceCategor
     latencyMs: r.dimension === "latency" ? r.latencyMs : undefined,
     ageDays: (now - new Date(r.createdAt).getTime()) / 86_400_000,
   }));
+  const prev = await latestScore(serviceId);
   const score = computeScore(observations, category);
   await appendScore(serviceId, score);
+
+  // Degradation alert: composite dropped meaningfully or the grade slipped.
+  if (prev && (prev.composite - score.composite >= 1 || prev.grade !== score.grade)) {
+    const drop = prev.composite - score.composite;
+    if (drop > 0) {
+      const service = await getService(serviceId);
+      await fireAlerts({
+        kind: prev.grade !== score.grade ? "grade_change" : "score_drop",
+        service: { id: serviceId, name: service?.name ?? `service ${serviceId}` },
+        previous: { composite: prev.composite, grade: prev.grade },
+        current: { composite: score.composite, grade: score.grade },
+        drop,
+      });
+    }
+  }
 }

@@ -1,7 +1,9 @@
-import { and, desc, eq, gt, gte, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, isNull, lte, sql } from "drizzle-orm";
 import type { CatalogEntry, ComputedScore, ProbeResult, VerificationResult } from "@veristat/shared";
 import { getDb } from "./client.js";
 import {
+  alertDeliveries,
+  alertSubscriptions,
   anchors,
   apiUsage,
   attestations,
@@ -307,6 +309,16 @@ export async function verificationsAfter(id: number) {
   return db.select().from(verifications).where(gt(verifications.id, id)).orderBy(verifications.id);
 }
 
+/** Verification rows covered by an anchor range, inclusive — for independent proof recomputation. */
+export async function verificationsInRange(fromId: number, toId: number) {
+  const db = getDb();
+  return db
+    .select()
+    .from(verifications)
+    .where(and(gte(verifications.id, fromId), lte(verifications.id, toId)))
+    .orderBy(verifications.id);
+}
+
 // ---------- incidents / disputes ----------
 
 export async function insertIncident(serviceId: number, kind: string, summary: string, probeIds: number[] = []) {
@@ -418,6 +430,137 @@ export async function logApiUsage(u: {
     paymentTxHash: u.paymentTxHash ?? null,
     priceUsd: u.priceUsd ?? null,
     demoMode: u.demoMode ?? false,
+  });
+}
+
+// ---------- landing stats / activity ----------
+
+/** Headline numbers for the landing hero — everything traceable to ledger rows. */
+export async function globalStats(): Promise<{
+  probes: number;
+  verdicts: number;
+  incidents: number;
+  servicesScored: number;
+  usdSpent: number;
+  paymentTxs: number;
+  anchoredLeaves: number;
+  attestationsConfirmed: number;
+}> {
+  const db = getDb();
+  const result = await db.execute(sql`
+    select
+      (select count(*) from probes) as probes,
+      (select count(*) from verifications) as verdicts,
+      (select count(*) from incidents) as incidents,
+      (select count(distinct service_id) from scores) as services_scored,
+      (select coalesce(sum(charged_usd), 0) from probes) as usd_spent,
+      (select count(*) from probes where payment_tx_hash is not null) as payment_txs,
+      (select coalesce(sum(leaf_count), 0) from anchors where status = 'confirmed') as anchored_leaves,
+      (select count(*) from attestations where status = 'confirmed') as attestations_confirmed
+  `);
+  const row = (result.rows as Array<Record<string, unknown>>)[0];
+  return {
+    probes: Number(row?.probes ?? 0),
+    verdicts: Number(row?.verdicts ?? 0),
+    incidents: Number(row?.incidents ?? 0),
+    servicesScored: Number(row?.services_scored ?? 0),
+    usdSpent: Number(row?.usd_spent ?? 0),
+    paymentTxs: Number(row?.payment_txs ?? 0),
+    anchoredLeaves: Number(row?.anchored_leaves ?? 0),
+    attestationsConfirmed: Number(row?.attestations_confirmed ?? 0),
+  };
+}
+
+/** Recent probes with service names and verdict summaries — the live activity feed. */
+export async function recentActivity(limit = 12): Promise<
+  Array<{
+    probeId: number;
+    serviceId: number;
+    serviceName: string;
+    templateId: string;
+    paymentTxHash: string | null;
+    paymentChain: string | null;
+    chargedUsd: number | null;
+    latencyMs: number | null;
+    startedAt: Date;
+    verdicts: Array<{ dimension: string; verdict: string }>;
+  }>
+> {
+  const db = getDb();
+  const rows = await db
+    .select({ probe: probes, serviceName: services.name })
+    .from(probes)
+    .innerJoin(services, eq(probes.serviceId, services.id))
+    .orderBy(desc(probes.id))
+    .limit(limit);
+  const verdictRows = await verificationsForProbes(rows.map((r) => r.probe.id));
+  return rows.map((r) => ({
+    probeId: r.probe.id,
+    serviceId: r.probe.serviceId,
+    serviceName: r.serviceName,
+    templateId: r.probe.templateId,
+    paymentTxHash: r.probe.paymentTxHash,
+    paymentChain: r.probe.paymentChain,
+    chargedUsd: r.probe.chargedUsd,
+    latencyMs: r.probe.latencyMs,
+    startedAt: r.probe.startedAt,
+    verdicts: verdictRows
+      .filter((v) => v.probeId === r.probe.id)
+      .map((v) => ({ dimension: v.dimension, verdict: v.verdict })),
+  }));
+}
+
+// ---------- degradation alerts ----------
+
+export async function createAlertSubscription(s: {
+  webhookUrl: string;
+  serviceId?: number | null;
+  minScoreDrop?: number;
+  notifyIncidents?: boolean;
+}): Promise<number> {
+  const db = getDb();
+  const [row] = await db
+    .insert(alertSubscriptions)
+    .values({
+      webhookUrl: s.webhookUrl,
+      serviceId: s.serviceId ?? null,
+      minScoreDrop: s.minScoreDrop ?? 5,
+      notifyIncidents: s.notifyIncidents ?? true,
+    })
+    .returning({ id: alertSubscriptions.id });
+  return row!.id;
+}
+
+/** Active subscriptions matching a service (service-specific ones plus catalog-wide ones). */
+export async function subscriptionsForService(serviceId: number) {
+  const db = getDb();
+  return db
+    .select()
+    .from(alertSubscriptions)
+    .where(
+      and(
+        eq(alertSubscriptions.active, true),
+        sql`(${alertSubscriptions.serviceId} = ${serviceId} or ${alertSubscriptions.serviceId} is null)`,
+      ),
+    );
+}
+
+export async function insertAlertDelivery(d: {
+  subscriptionId: number;
+  serviceId: number;
+  kind: string;
+  payload: unknown;
+  httpStatus?: number | null;
+  status: "sent" | "failed";
+}) {
+  const db = getDb();
+  await db.insert(alertDeliveries).values({
+    subscriptionId: d.subscriptionId,
+    serviceId: d.serviceId,
+    kind: d.kind,
+    payload: d.payload,
+    httpStatus: d.httpStatus ?? null,
+    status: d.status,
   });
 }
 

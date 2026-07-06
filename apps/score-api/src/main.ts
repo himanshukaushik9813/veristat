@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { createLogger } from "@veristat/shared";
 import {
+  createAlertSubscription,
   getService,
   latestScore,
   leaderboard,
@@ -126,6 +127,66 @@ app.get("/v1/query", paid(PRICE_SCORE), (req, res) => {
 });
 
 // ---- free endpoints ----
+
+/** Resolve a service endpoint URL to Veristat catalog entries (free — the score itself is paid). */
+app.get("/v1/resolve", async (req, res) => {
+  const endpoint = String(req.query.endpoint ?? "");
+  if (!endpoint) {
+    res.status(400).json({ error: "endpoint query param required" });
+    return;
+  }
+  const all = await leaderboard();
+  const norm = (u: string) => u.replace(/\/+$/, "").toLowerCase();
+  const matches = all.filter(
+    (r) => norm(r.service.endpoint) === norm(endpoint) || norm(endpoint).startsWith(norm(r.service.endpoint)),
+  );
+  res.json({
+    services: matches.map((r) => ({
+      id: r.service.id,
+      name: r.service.name,
+      endpoint: r.service.endpoint,
+      category: r.service.category,
+    })),
+  });
+});
+
+/**
+ * Degradation alerts (free): register a webhook that fires when a service's
+ * verified score drops, its grade changes, or an incident is recorded.
+ * Body: { webhookUrl, serviceId?, minScoreDrop?, notifyIncidents? }
+ */
+app.post("/v1/alerts/subscribe", express.json(), async (req, res) => {
+  const { webhookUrl, serviceId, minScoreDrop, notifyIncidents } = req.body ?? {};
+  let parsed: URL;
+  try {
+    parsed = new URL(String(webhookUrl));
+  } catch {
+    res.status(400).json({ error: "webhookUrl must be a valid URL" });
+    return;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    res.status(400).json({ error: "webhookUrl must be http(s)" });
+    return;
+  }
+  if (serviceId != null) {
+    const service = await getService(Number(serviceId));
+    if (!service) {
+      res.status(404).json({ error: "unknown service" });
+      return;
+    }
+  }
+  const id = await createAlertSubscription({
+    webhookUrl: parsed.toString(),
+    serviceId: serviceId != null ? Number(serviceId) : null,
+    minScoreDrop: minScoreDrop != null ? Number(minScoreDrop) : undefined,
+    notifyIncidents: notifyIncidents != null ? Boolean(notifyIncidents) : undefined,
+  });
+  res.status(201).json({
+    subscriptionId: id,
+    scope: serviceId != null ? `service ${serviceId}` : "all services",
+    events: ["score_drop", "grade_change", ...(notifyIncidents === false ? [] : ["incident"])],
+  });
+});
 
 app.get("/v1/methodology", async (_req, res) => {
   try {

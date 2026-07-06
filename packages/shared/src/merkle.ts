@@ -71,6 +71,39 @@ export function merkleProof(leaves: Buffer[], index: number): Buffer[] {
   return proof;
 }
 
+/**
+ * The exact canonical shape of an anchored verification-ledger row. Anyone can
+ * rebuild a leaf as sha256(canonicalize(canonicalVerificationRow(row))) from
+ * published evidence and prove inclusion against the on-chain EvidenceAnchor.
+ */
+export interface AnchoredVerificationRow {
+  id: number;
+  probeId: number;
+  serviceId: number;
+  tier: number;
+  dimension: string;
+  verdict: string;
+  expected: unknown;
+  actual: unknown;
+  groundTruth: unknown;
+  createdAt: Date | string;
+}
+
+export function canonicalVerificationRow(v: AnchoredVerificationRow) {
+  return {
+    id: v.id,
+    probeId: v.probeId,
+    serviceId: v.serviceId,
+    tier: v.tier,
+    dimension: v.dimension,
+    verdict: v.verdict,
+    expected: v.expected ?? null,
+    actual: v.actual ?? null,
+    groundTruth: v.groundTruth ?? null,
+    createdAt: new Date(v.createdAt).toISOString(),
+  };
+}
+
 export function verifyProof(leaf: Buffer, proof: Buffer[], root: Buffer): boolean {
   let acc = leaf;
   for (const sibling of proof) acc = pairHash(acc, sibling);

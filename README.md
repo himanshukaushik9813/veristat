@@ -48,7 +48,9 @@ a score ([neutrality policy](docs/neutrality-policy.md), [methodology](docs/meth
 | chain | `packages/chain` | viem clients, x402 client/server, HD wallet derivation |
 | worker | `apps/worker` | crawler + prober + verifier + scorer + attestor + anchorer daemon |
 | score-api | `apps/score-api` | paid x402 score endpoints (`/v1/score`, `/v1/category`, `/v1/evidence`) |
-| web | `apps/web` | leaderboard, scorecards, report, methodology, badge SVG |
+| web | `apps/web` | landing hero + live probe feed, leaderboard, scorecards, report, methodology, badge SVG |
+| sdk | `packages/sdk` | `@veristat/sdk` — pre-purchase gate for agents (`veristat.guard(url, policy)`) |
+| mcp | `apps/mcp` | MCP server: `check_before_purchase`, `get_service_score`, `compare_category`, `get_evidence` |
 | contracts | `contracts` | `EvidenceAnchor` + ERC-8004 `Identity`/`Validation` registries + `MockUSDT` (Foundry) |
 | mock ASPs | `demo/mock-asps` | 4 x402 oracles: honest / stale / liar / greedy |
 
@@ -135,10 +137,55 @@ tier-weighted confidence indicator. Tier 3 services are explicitly labeled
 **"accuracy not verified"** — Veristat never fabricates an accuracy number.
 Full formula: [docs/methodology.md](docs/methodology.md).
 
+## Using Veristat from your agent
+
+**SDK — three lines before any x402 spend:**
+
+```ts
+import { Veristat } from "@veristat/sdk";
+
+const veristat = new Veristat({ baseUrl: "https://api.veristat.example" });
+const gate = await veristat.guard(serviceUrl, { minScore: 70, requireVerifiedAccuracy: true });
+if (!gate.allow) throw new Error(`blocked: ${gate.reason}`);
+```
+
+`guard()` fails closed when a service has no verified track record (configurable
+via `onUnknown: "allow" | "warn" | "block"`).
+
+**MCP — plug it into Claude or any MCP client:**
+
+```json
+{ "mcpServers": { "veristat": { "command": "node", "args": ["apps/mcp/dist/main.js"],
+  "env": { "VERISTAT_API_URL": "http://localhost:4020" } } } }
+```
+
+**Degradation alerts — webhook when a score drops or an incident lands:**
+
+```bash
+curl -X POST http://localhost:4020/v1/alerts/subscribe \
+  -H 'content-type: application/json' \
+  -d '{"webhookUrl":"https://your.agent/hooks/veristat","minScoreDrop":5}'
+```
+
+## Verify the evidence yourself
+
+Every verification row is Merkle-anchored on XLayer. Anyone can recompute a
+proof from published evidence — no trust in Veristat's database required:
+
+```bash
+pnpm --filter @veristat/worker verify-proof 42
+# anchor #1: rows 1..159 · recomputed root ✓ matches published
+# contract verifyLeaf(): ✓ PROOF VALID ON-CHAIN
+```
+
+It fetches the canonical rows from the public API (`/api/anchors/:id/leaves`),
+rebuilds the sha256 sorted-pair tree, and calls `EvidenceAnchor.verifyLeaf()`
+on XLayer with the recomputed proof.
+
 ## Tests
 
 ```bash
-pnpm test          # scoring, merkle, verification engine, anti-gaming (32 tests)
+pnpm test          # scoring, merkle, verification engine, anti-gaming, SDK guard (37 tests)
 cd contracts && forge test   # anchor + ERC-8004 registries (13 tests)
 ```
 

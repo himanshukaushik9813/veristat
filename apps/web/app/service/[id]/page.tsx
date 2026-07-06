@@ -194,6 +194,21 @@ export default async function ServicePage({ params }: { params: Promise<{ id: st
           </details>
         );
       })}
+
+      <h2>Embed this score</h2>
+      <p className="sub">
+        Providers may display their live badge — it always reflects the current verified score
+        and links back to this evidence page.
+      </p>
+      <div className="embed">
+        <div className="k">Badge preview</div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`/api/badge/${service.id}`} alt={`Veristat score badge for ${service.name}`} height={28} />
+        <div className="k" style={{ marginTop: 12 }}>HTML snippet</div>
+        <code>
+          {`<a href="${process.env.PUBLIC_BASE_URL ?? "http://localhost:3000"}/service/${service.id}"><img src="${process.env.PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/badge/${service.id}" alt="Veristat verified score" /></a>`}
+        </code>
+      </div>
     </main>
   );
 }

@@ -206,6 +206,27 @@ export const anchors = pgTable("anchors", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const alertSubscriptions = pgTable("alert_subscriptions", {
+  id: serial("id").primaryKey(),
+  serviceId: integer("service_id").references(() => services.id), // null = all services
+  webhookUrl: text("webhook_url").notNull(),
+  minScoreDrop: doublePrecision("min_score_drop").notNull().default(5),
+  notifyIncidents: boolean("notify_incidents").notNull().default(true),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const alertDeliveries = pgTable("alert_deliveries", {
+  id: serial("id").primaryKey(),
+  subscriptionId: integer("subscription_id").notNull().references(() => alertSubscriptions.id),
+  serviceId: integer("service_id").notNull().references(() => services.id),
+  kind: text("kind").notNull(), // score_drop | grade_change | incident
+  payload: jsonb("payload").notNull(),
+  httpStatus: integer("http_status"),
+  status: text("status").notNull(), // sent | failed
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const apiUsage = pgTable("api_usage", {
   id: serial("id").primaryKey(),
   endpoint: text("endpoint").notNull(),

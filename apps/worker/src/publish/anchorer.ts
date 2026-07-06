@@ -1,11 +1,13 @@
 import { parseAbi } from "viem";
 import {
   canonicalize,
+  canonicalVerificationRow,
   createLogger,
   deployment,
   hex,
   leafHash,
   merkleRoot,
+  type AnchoredVerificationRow,
   type ChainKey,
 } from "@veristat/shared";
 import { publicClient, treasuryAccount, walletClient } from "@veristat/chain";
@@ -21,30 +23,8 @@ const CHAIN: ChainKey = (process.env.ANCHOR_CHAIN as ChainKey) ?? "xlayerTestnet
 const MIN_LEAVES = Number(process.env.ANCHOR_MIN_LEAVES ?? 5);
 
 /** Canonical leaf: the exact fields any third party can recompute from published evidence. */
-export function anchorLeaf(v: {
-  id: number;
-  probeId: number;
-  serviceId: number;
-  tier: number;
-  dimension: string;
-  verdict: string;
-  expected: unknown;
-  actual: unknown;
-  groundTruth: unknown;
-  createdAt: Date | string;
-}): Buffer {
-  return leafHash({
-    id: v.id,
-    probeId: v.probeId,
-    serviceId: v.serviceId,
-    tier: v.tier,
-    dimension: v.dimension,
-    verdict: v.verdict,
-    expected: v.expected ?? null,
-    actual: v.actual ?? null,
-    groundTruth: v.groundTruth ?? null,
-    createdAt: new Date(v.createdAt).toISOString(),
-  });
+export function anchorLeaf(v: AnchoredVerificationRow): Buffer {
+  return leafHash(canonicalVerificationRow(v));
 }
 
 /**

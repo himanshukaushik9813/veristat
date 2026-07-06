@@ -10,7 +10,8 @@
     "dev": "tsx src/main.ts",
     "crawl": "tsx src/main.ts crawl",
     "probe-once": "tsx src/main.ts probe-once",
-    "dispute": "tsx src/cli/dispute.ts"
+    "dispute": "tsx src/cli/dispute.ts",
+    "verify-proof": "tsx src/cli/verify-proof.ts"
   },
   "dependencies": {
     "@veristat/chain": "workspace:*",
