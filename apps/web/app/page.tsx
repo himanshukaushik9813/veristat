@@ -50,19 +50,32 @@ export default async function Landing() {
 
   return (
     <main className="landing">
-      <section className="hero">
-        <h1>
-          Trust,
-          <br />
-          <span className="accent">verified</span> with money.
-        </h1>
-        <p className="sub">
-          Veristat adversarially probes paid AI agent services, verifies every answer against
-          on-chain truth, and publishes cryptographic proof.
-        </p>
-        <Link href="/docs" className="btn-primary lg">
-          Get Early Access <span aria-hidden>↗</span>
-        </Link>
+      <section className="hero-shot">
+        <div className="hero">
+          <h1>
+            Trust,
+            <br />
+            <span className="accent">verified</span>
+            <br />
+            with money.
+          </h1>
+          <p className="sub">
+            Veristat adversarially probes paid AI agent services, verifies every answer against
+            on-chain truth, and publishes cryptographic proof.
+          </p>
+          <div className="cta-row">
+            <Link href="/docs" className="btn-primary lg">
+              Get Early Access <span aria-hidden>↗</span>
+            </Link>
+            <Link href="/leaderboard" className="btn-ghost">
+              Explore Leaderboard
+            </Link>
+          </div>
+          <div className="live-note">
+            <span className="dot" aria-hidden />
+            Live verification network — probing {stats.servicesScored} services
+          </div>
+        </div>
       </section>
 
       <Pipeline />
