@@ -1,0 +1,62 @@
+/* Veristat — color tokens · X LAYER MONOCHROME THEME.
+   Pure-black canvas, white/grayscale ink, a single white accent, and a
+   grayscale severity ramp (bright = good, dim = bad). No hue anywhere — the
+   look of the X Layer "Build X Hackathon" key art: stark, cold, high-contrast,
+   ASCII-texture energy. Meaning is carried by brightness, glyphs (✓ / ✗) and
+   labels rather than color. Grades are solid blocks on a light→dark ramp. */
+:root {
+  /* ---- base surfaces (pure black → raised) ---- */
+  --surface-0: #000000; /* page background — true black */
+  --surface-1: #0b0b0d; /* cards, panels, tables */
+  --surface-2: #17181b; /* raised / inset chips, tracks, hover fills */
+  --border: #2a2b30;    /* thin 1px hairlines everywhere */
+
+  /* ---- text (ink on black) ---- */
+  --text-primary: #fafafa;   /* headings, numbers, verdicts */
+  --text-secondary: #9a9ba2; /* prose, secondary values */
+  --text-muted: #616268;     /* captions, "not verified", metadata */
+
+  /* ---- accent (monochrome white) ---- */
+  --accent: #ffffff;         /* links, chart series, primary text-accent */
+  --accent-strong: #ffffff;  /* primary button fill (takes dark ink) */
+  --accent-dim: #3c3d42;     /* muted accent, low-value fills */
+  --blue: #c7c8cd;           /* light-gray secondary series (legacy name) */
+  --violet: #7d7e85;         /* mid-gray gradient terminus (legacy name) */
+
+  /* ---- data series aliases ---- */
+  --series-1: var(--accent);
+  --series-1-dim: #6a6b71;
+
+  /* ---- semantic ramp (brightness = goodness) ---- */
+  --good: #f0f0f2;      /* verified correct, confirmed, pass — brightest */
+  --warning: #b4b5bb;   /* stale, dispute, caution */
+  --serious: #86878d;   /* overcharge / integrity risk */
+  --critical: #626368;  /* verifiably wrong, failed — dimmest */
+
+  /* ---- semantic tints (white overlays at low alpha) ---- */
+  --good-tint: rgba(255, 255, 255, 0.14);
+  --warning-tint: rgba(255, 255, 255, 0.08);
+  --serious-tint: rgba(255, 255, 255, 0.06);
+  --critical-tint: rgba(255, 255, 255, 0.11);
+  --accent-tint: rgba(255, 255, 255, 0.08);
+
+  /* ---- grade band solids (light = high grade → dark = low grade) ---- */
+  --grade-a: #ffffff;             /* white */
+  --grade-b: #cbccd1;             /* light gray */
+  --grade-c: #94959b;             /* mid gray */
+  --grade-d: #5a5b61;             /* dark gray */
+  --grade-f: #29292e;             /* near-black */
+  --grade-ink-dark: #08080a;      /* dark ink on light (A/B/C) chips */
+
+  /* ---- glass overlays (sticky nav, menus) ---- */
+  --glass-nav: rgba(0, 0, 0, 0.72);
+  --glass-menu: rgba(10, 10, 12, 0.96);
+
+  /* ---- semantic surface aliases ---- */
+  --surface-page: var(--surface-0);
+  --surface-card: var(--surface-1);
+  --surface-raised: var(--surface-2);
+  --text-body: var(--text-secondary);
+  --text-heading: var(--text-primary);
+  --link: var(--accent);
+}

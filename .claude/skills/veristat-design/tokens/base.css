@@ -1,0 +1,27 @@
+/* Veristat — base reset & primitive element styles.
+   Mirrors the product's globals.css: dark body, accent links, mono numerals.
+   Kept minimal — component styling lives with the components. */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font: var(--fs-body)/var(--lh-body) var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+h1 { font-size: var(--fs-h1); letter-spacing: var(--ls-heading); margin: 8px 0 4px; font-weight: var(--fw-bold); }
+h2 { font-size: var(--fs-h2); margin: 32px 0 12px; font-weight: var(--fw-bold); }
+
+/* every number, hash, address & code fragment renders mono + tabular */
+code, kbd, samp, .mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: var(--num-tabular);
+}
+
+::selection { background: rgba(109, 126, 248, 0.32); color: #fff; }

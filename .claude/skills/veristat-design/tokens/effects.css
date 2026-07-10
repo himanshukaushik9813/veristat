@@ -1,0 +1,41 @@
+/* Veristat — effects: radii, borders, shadows, glow, motion.
+   The surface language is thin 1px hairlines + soft 10px cards, lit from
+   within by low-alpha accent glow (echoing the hologram tower). Motion is
+   restrained: short eases, gentle pulses on "live" indicators, a bobbing
+   icon on the pipeline — never bounce, never decoration for its own sake. */
+:root {
+  /* ---- corner radii ---- */
+  --radius-xs: 4px;    /* verdict chips, grade blocks, code inline */
+  --radius-sm: 6px;    /* small chips */
+  --radius-md: 8px;    /* nav links, buttons (compact) */
+  --radius-lg: 10px;   /* cards, evidence, buttons */
+  --radius-xl: 16px;   /* panels, stat panel, anchor bar */
+  --radius-2xl: 20px;  /* hero shot */
+  --radius-pill: 999px;
+
+  /* ---- borders ---- */
+  --border-width: 1px; /* @kind spacing */
+  --border-hair: 1px solid var(--border);
+
+  /* ---- shadows ---- */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-menu: 0 18px 48px rgba(0, 0, 0, 0.65), 0 0 32px rgba(255, 255, 255, 0.05);
+  --shadow-hero: 0 24px 80px rgba(0, 0, 0, 0.6);
+
+  /* ---- accent glow (monochrome white halo) ---- */
+  --glow-accent: 0 0 24px rgba(255, 255, 255, 0.16);
+  --glow-accent-soft: 0 0 14px rgba(255, 255, 255, 0.09);
+  --glow-good: 0 0 8px rgba(255, 255, 255, 0.55); /* @kind shadow */
+
+  /* ---- glass / blur (sticky nav, dropdowns, ghost buttons) ---- */
+  --blur-nav: blur(14px) saturate(1); /* @kind other */
+  --blur-menu: blur(18px); /* @kind other */
+  --glass-nav: rgba(0, 0, 0, 0.72); /* @kind color */
+  --glass-menu: rgba(10, 10, 12, 0.96); /* @kind color */
+
+  /* ---- motion ---- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* @kind other */
+  --dur-fast: 0.12s; /* @kind other */
+  --dur-base: 0.15s; /* @kind other */
+  --dur-slow: 0.35s; /* @kind other */
+}

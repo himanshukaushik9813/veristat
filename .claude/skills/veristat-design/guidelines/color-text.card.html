@@ -1,0 +1,21 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Text on Dark" subtitle="Primary / secondary / muted ink" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-1); }
+  .line { display: flex; align-items: baseline; gap: 14px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .line:last-child { border-bottom: none; }
+  .demo { font: 600 17px var(--font-sans); flex: 1; }
+  .name { font: 600 12px var(--font-sans); color: var(--text-secondary); width: 120px; }
+  .val { font: 11px var(--font-mono); color: var(--text-muted); }
+</style>
+</head>
+<body>
+  <div class="line"><span class="name">text-primary</span><span class="demo" style="color:var(--text-primary)">returned 42.7 at block 9,214,006</span><span class="val">#fafafa</span></div>
+  <div class="line"><span class="name">text-secondary</span><span class="demo" style="color:var(--text-secondary)">verified against on-chain truth</span><span class="val">#9a9ba2</span></div>
+  <div class="line"><span class="name">text-muted</span><span class="demo" style="color:var(--text-muted)">accuracy not verified · Tier 3</span><span class="val">#616268</span></div>
+</body>
+</html>

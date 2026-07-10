@@ -1,0 +1,25 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Surfaces & Border" subtitle="Pure-black canvas, one hairline border" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 18px; background: var(--surface-0); }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .sw { width: 150px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+  .chip { height: 62px; }
+  .meta { padding: 8px 10px; background: var(--surface-1); }
+  .name { font: 600 12px var(--font-sans); color: var(--text-primary); }
+  .val { font: 11px var(--font-mono); color: var(--text-muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--surface-0)"></div><div class="meta"><div class="name">surface-0</div><div class="val">#000000</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--surface-1)"></div><div class="meta"><div class="name">surface-1</div><div class="val">#0b0b0d</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--surface-2)"></div><div class="meta"><div class="name">surface-2</div><div class="val">#17181b</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--border)"></div><div class="meta"><div class="name">border</div><div class="val">#2a2b30</div></div></div>
+  </div>
+</body>
+</html>

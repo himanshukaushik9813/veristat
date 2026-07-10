@@ -1,0 +1,32 @@
+<!-- @dsCard group="Brand" viewport="700x260" name="Key-Art Hero" subtitle="Desaturated stacked tower — monochrome brand image" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; background: var(--surface-0); }
+  .frame { position: relative; height: 260px; overflow: hidden; background: var(--surface-0); }
+  .art { position: absolute; inset: 0; background: url("../assets/hero-bg.png") right center / cover no-repeat;
+         filter: grayscale(1) contrast(1.08) brightness(0.92); }
+  .frame::before { content: ""; position: absolute; inset: 0; z-index: 1;
+    background: linear-gradient(92deg, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.85) 32%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0) 78%); }
+  .grid { position: absolute; inset: 0; z-index: 1; opacity: 0.5;
+    background-image: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size: 40px 40px; -webkit-mask-image: linear-gradient(90deg,#000 55%,transparent 92%); mask-image: linear-gradient(90deg,#000 55%,transparent 92%); }
+  .cap { position: absolute; left: 26px; bottom: 20px; z-index: 2; }
+  .cap h3 { font: 700 20px var(--font-sans); letter-spacing: -0.02em; color: var(--text-primary); margin: 0 0 4px; }
+  .cap p { font: 12px var(--font-mono); color: var(--text-muted); margin: 0; }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="art"></div>
+    <div class="grid"></div>
+    <div class="cap">
+      <h3>Trust, verified with money.</h3>
+      <p>hero-bg.png · desaturated to monochrome</p>
+    </div>
+  </div>
+</body>
+</html>

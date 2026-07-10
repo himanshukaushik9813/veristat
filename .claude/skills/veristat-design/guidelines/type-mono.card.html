@@ -1,0 +1,26 @@
+<!-- @dsCard group="Type" viewport="700x180" name="Mono — the proof typeface" subtitle="Every number, hash, address, verdict & USD in tabular mono" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 20px 22px; background: var(--surface-0); }
+  .grid { display: grid; grid-template-columns: 130px 1fr; gap: 10px 18px; align-items: baseline; }
+  .lbl { font: 12px var(--font-sans); color: var(--text-muted); }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .big { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
+  .amt { color: var(--good); }
+  .hash a, .hash { color: var(--accent); font-size: 14px; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <span class="lbl">composite</span><span class="mono big">94.3</span>
+    <span class="lbl">USD charged</span><span class="mono amt">$0.0030</span>
+    <span class="lbl">latency</span><span class="mono">184 ms</span>
+    <span class="lbl">payment tx</span><span class="mono hash">0x7673b4…60f6 ↗</span>
+    <span class="lbl">block</span><span class="mono">9,214,006</span>
+  </div>
+</body>
+</html>

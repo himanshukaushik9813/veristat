@@ -1,0 +1,25 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Semantic — Verdict Ramp" subtitle="Brightness carries severity: bright = good, dim = wrong" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 18px; background: var(--surface-0); }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .sw { width: 150px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+  .chip { height: 56px; display: flex; align-items: center; justify-content: center; font: 700 13px var(--font-mono); color: #08080a; }
+  .meta { padding: 7px 10px; background: var(--surface-1); }
+  .name { font: 600 12px var(--font-sans); color: var(--text-primary); }
+  .val { font: 11px var(--font-mono); color: var(--text-muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--good)">✓ verified</div><div class="meta"><div class="name">good</div><div class="val">#f0f0f2</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--warning)">stale</div><div class="meta"><div class="name">warning</div><div class="val">#b4b5bb</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--serious)">overcharge</div><div class="meta"><div class="name">serious</div><div class="val">#86878d</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--critical);color:#fafafa">✗ wrong</div><div class="meta"><div class="name">critical</div><div class="val">#626368</div></div></div>
+  </div>
+</body>
+</html>

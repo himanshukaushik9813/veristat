@@ -1,0 +1,8 @@
+/* Veristat — webfonts.
+   INTENTIONALLY EMPTY of @font-face rules. Veristat ships no brand typeface;
+   it uses the platform system-sans stack for prose and the system-monospace
+   stack (SF Mono / Menlo / Consolas) for all measured values. This keeps the
+   terminal-grade density with zero font payload and perfect tabular numerals
+   on every platform. If a branded typeface is ever adopted, declare its
+   @font-face here and point --font-sans / --font-mono (tokens/typography.css)
+   at it. */

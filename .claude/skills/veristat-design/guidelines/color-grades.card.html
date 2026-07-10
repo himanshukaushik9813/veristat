@@ -1,0 +1,23 @@
+<!-- @dsCard group="Colors" viewport="700x140" name="Grade Bands" subtitle="Solid blocks on a light→dark ramp — high grade bright, low grade dark" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 22px 18px; background: var(--surface-0); display: flex; gap: 16px; align-items: center; }
+  .grade { display: inline-flex; align-items: center; justify-content: center;
+    min-width: 52px; height: 44px; padding: 0 12px; border-radius: 8px;
+    font-family: var(--font-mono); font-weight: 700; font-size: 22px; }
+  .g { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .lbl { font: 11px var(--font-mono); color: var(--text-muted); }
+</style>
+</head>
+<body>
+  <div class="g"><span class="grade" style="background:var(--grade-a);color:var(--grade-ink-dark)">A</span><span class="lbl">≥ 90</span></div>
+  <div class="g"><span class="grade" style="background:var(--grade-b);color:var(--grade-ink-dark)">B</span><span class="lbl">80–89</span></div>
+  <div class="g"><span class="grade" style="background:var(--grade-c);color:var(--grade-ink-dark)">C</span><span class="lbl">70–79</span></div>
+  <div class="g"><span class="grade" style="background:var(--grade-d);color:#fafafa">D</span><span class="lbl">60–69</span></div>
+  <div class="g"><span class="grade" style="background:var(--grade-f);color:#fafafa">F</span><span class="lbl">&lt; 60</span></div>
+</body>
+</html>

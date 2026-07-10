@@ -1,0 +1,24 @@
+<!-- @dsCard group="Spacing" viewport="700x170" name="Radii & Borders" subtitle="Thin 1px hairlines, soft 10px cards" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-0); display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .box { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .sq { width: 76px; height: 60px; background: var(--surface-1); border: 1px solid var(--border); }
+  .lbl { font: 11px var(--font-mono); color: var(--text-muted); }
+  .lbl b { color: var(--text-secondary); font-weight: 500; }
+</style>
+</head>
+<body>
+  <div class="box"><span class="sq" style="border-radius:4px"></span><span class="lbl"><b>xs</b> 4px</span></div>
+  <div class="box"><span class="sq" style="border-radius:6px"></span><span class="lbl"><b>sm</b> 6px</span></div>
+  <div class="box"><span class="sq" style="border-radius:8px"></span><span class="lbl"><b>md</b> 8px</span></div>
+  <div class="box"><span class="sq" style="border-radius:10px"></span><span class="lbl"><b>lg</b> 10px</span></div>
+  <div class="box"><span class="sq" style="border-radius:16px"></span><span class="lbl"><b>xl</b> 16px</span></div>
+  <div class="box"><span class="sq" style="border-radius:20px"></span><span class="lbl"><b>2xl</b> 20px</span></div>
+  <div class="box"><span class="sq" style="border-radius:999px;width:60px"></span><span class="lbl"><b>pill</b> chips</span></div>
+</body>
+</html>

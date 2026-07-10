@@ -1,0 +1,28 @@
+/* Veristat — spacing & sizing tokens.
+   Dense, evidence-first layout. Base rhythm is 4px; container maxes at
+   1200px with generous side gutters. */
+:root {
+  /* ---- spacing scale (4px base) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---- layout ---- */
+  --container-max: 1200px;
+  --container-pad-x: 32px;
+  --prose-max: 760px;
+
+  /* ---- component padding ---- */
+  --pad-card: 16px;
+  --pad-panel: 20px;
+  --pad-cell: 12px;         /* table cell */
+  --pad-btn-y: 10px;
+  --pad-btn-x: 20px;
+}
