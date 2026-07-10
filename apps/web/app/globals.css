@@ -269,6 +269,16 @@ h2 { font-size: 17px; margin: 32px 0 12px; }
 }
 .btn-ghost:hover { border-color: var(--accent); background: rgba(22, 26, 44, 0.8); text-decoration: none; }
 
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: var(--radius-lg);
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text-primary) !important;
+  font-size: 14px; font-weight: 600; white-space: nowrap;
+  transition: background var(--dur-base, 0.15s) ease, border-color var(--dur-base, 0.15s) ease;
+}
+.btn-secondary:hover { border-color: var(--accent-dim); background: var(--surface-1); text-decoration: none; }
+
 @media (max-width: 760px) {
   .hero-shot { min-height: 0; background-position: 74% center; }
   .hero { padding: 56px 28px; }

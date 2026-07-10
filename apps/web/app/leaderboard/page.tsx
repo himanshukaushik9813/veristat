@@ -127,7 +127,13 @@ export default async function Leaderboard() {
                     </td>
                     <td>
                       {a.verdicts.map((v, i) => (
-                        <span key={i} className="verdict" data-v={v.verdict} title={v.dimension} style={{ marginRight: 4 }}>
+                        <span
+                          key={i}
+                          className="verdict"
+                          data-v={v.verdict}
+                          title={`${v.dimension}: ${v.verdict}`}
+                          style={{ marginRight: 4 }}
+                        >
                           {v.dimension.slice(0, 3)}:{v.verdict === "pass" ? "✓" : v.verdict === "fail" ? "✗" : "–"}
                         </span>
                       ))}
