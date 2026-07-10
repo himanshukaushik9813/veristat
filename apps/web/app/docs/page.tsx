@@ -23,12 +23,15 @@ const gate = await veristat.guard(serviceUrl, {
   requireVerifiedAccuracy: true,
 });
 if (!gate.allow) throw new Error(\`blocked: \${gate.reason}\`);`}</pre>
-      <p>A real deny result names the exact policy failures:</p>
+      <p>
+        A real deny result names the exact policy failures — this is the live verdict{" "}
+        <code>guard()</code> returns for the Liar Oracle on the current leaderboard:
+      </p>
       <pre className="code">{`{
   allow: false,
-  reason: "composite 51.0 < required 70; integrity 40 < required 60 (billing risk)",
-  score: { composite: 51, grade: "F", dimensions: { accuracy: 0, integrity: 40, ... } },
-  serviceId: 4
+  reason: "composite 51.1 < required 70",
+  score: { composite: 51.1, grade: "F", dimensions: { accuracy: 0, integrity: 100, ... } },
+  serviceId: 3
 }`}</pre>
 
       <h2 id="mcp">MCP server — scores as agent tools</h2>
@@ -85,13 +88,16 @@ if (!gate.allow) throw new Error(\`blocked: \${gate.reason}\`);`}</pre>
       <pre className="code">{`curl -X POST $VERISTAT_API/v1/alerts/subscribe \\
   -H 'content-type: application/json' \\
   -d '{"webhookUrl":"https://your.agent/hooks/veristat","minScoreDrop":5}'`}</pre>
-      <p>Example webhook payload:</p>
+      <p>
+        Webhook payload as delivered for a real incident (the Greedy Oracle&apos;s on-chain
+        overcharge, from the incidents ledger):
+      </p>
       <pre className="code">{`{
   "event": "incident",
   "service": { "id": 4, "name": "Greedy Oracle" },
   "incidentKind": "overcharge",
-  "summary": "quoted $0.0010 but charged $0.0030 (on-chain Transfer event)",
-  "scorecardUrl": "https://veristat.example/service/4"
+  "summary": "charged $0.003 vs listed/quoted $0.001",
+  "scorecardUrl": "${process.env.PUBLIC_BASE_URL ?? "http://localhost:3000"}/service/4"
 }`}</pre>
 
       <h2 id="verify">Verify the evidence yourself</h2>
