@@ -35,7 +35,7 @@ export default async function Leaderboard() {
 
       {categories.map((category) => (
         <section key={category}>
-          <h2>{category}</h2>
+          <h2 style={{ textTransform: "capitalize" }}>{category}</h2>
           <table className="list">
             <thead>
               <tr>

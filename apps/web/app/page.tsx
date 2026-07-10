@@ -77,6 +77,8 @@ export default async function Landing() {
   return (
     <main className="landing">
       <section className="hero-shot">
+        <div className="hero-art" aria-hidden />
+        <div className="hero-scan" aria-hidden />
         <div className="hero">
           <h1>
             Trust,

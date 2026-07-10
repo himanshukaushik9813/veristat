@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CHAINS, type ChainKey } from "@veristat/shared";
 import {
@@ -18,6 +19,19 @@ function txLink(chain: string | null, hash: string | null) {
   if (!hash) return null;
   const cfg = chain && chain in CHAINS ? CHAINS[chain as ChainKey] : null;
   return cfg ? cfg.explorerTxUrl(hash) : null;
+}
+
+/** Truncate a 0x… hash to `0x7673b4…60f6` — the hash IS the proof, kept scannable. */
+function truncateHash(hash: string, lead = 20, tail = 6) {
+  return hash.length <= lead + tail + 1 ? hash : `${hash.slice(0, lead)}…${hash.slice(-tail)}`;
+}
+
+/** Dimension bar color follows the measured value: <50 critical, <75 warning. */
+function dimColor(value: number | null) {
+  if (value === null) return "var(--accent)";
+  if (value < 50) return "var(--critical)";
+  if (value < 75) return "var(--warning)";
+  return "var(--accent)";
 }
 
 const DIMENSIONS = [
@@ -45,7 +59,10 @@ export default async function ServicePage({ params }: { params: Promise<{ id: st
 
   return (
     <main>
-      <h1>
+      <Link href="/leaderboard" style={{ fontSize: 13 }}>
+        ← Leaderboard
+      </Link>
+      <h1 style={{ marginTop: 10 }}>
         {service.name}{" "}
         {service.isSelf && <span className="badge-coi">Veristat itself — scored by the same methodology (conflict of interest disclosed)</span>}
       </h1>
@@ -74,7 +91,18 @@ export default async function ServicePage({ params }: { params: Promise<{ id: st
             <div className="card">
               <div className="k">Verification tier</div>
               <div className="v">
-                T{score.dominantTier}{" "}
+                <span
+                  className="tier"
+                  title={
+                    score.dominantTier === 1
+                      ? "Tier 1 — deterministic on-chain truth"
+                      : score.dominantTier === 2
+                        ? "Tier 2 — consensus cross-reference"
+                        : "Tier 3 — operational only, accuracy not verified"
+                  }
+                >
+                  T{score.dominantTier}
+                </span>{" "}
                 <small>
                   {score.dominantTier === 1
                     ? "deterministic on-chain truth"
@@ -99,7 +127,7 @@ export default async function ServicePage({ params }: { params: Promise<{ id: st
               <div className="dim" key={key}>
                 <span className="name">{label}</span>
                 <span className="track">
-                  <span className="fill" style={{ width: `${value ?? 0}%` }} />
+                  <span className="fill" style={{ width: `${value ?? 0}%`, background: dimColor(value) }} />
                 </span>
                 {value === null ? (
                   <span className="val na" title="Tier 3: never fabricated">n/a</span>
@@ -175,7 +203,15 @@ export default async function ServicePage({ params }: { params: Promise<{ id: st
                 ${probe.quotedUsd ?? "0"} / ${probe.chargedUsd ?? "0"}
               </dd>
               <dt>payment tx</dt>
-              <dd>{link ? <a href={link}>{probe.paymentTxHash}</a> : (probe.paymentTxHash ?? "free/unpaid")}</dd>
+              <dd>
+                {link && probe.paymentTxHash ? (
+                  <a href={link} target="_blank" rel="noreferrer" title={probe.paymentTxHash}>
+                    {truncateHash(probe.paymentTxHash)} ↗
+                  </a>
+                ) : (
+                  (probe.paymentTxHash ?? "free/unpaid")
+                )}
+              </dd>
               <dt>response sha256</dt>
               <dd>{probe.responseHash ?? "—"}</dd>
               <dt>probed at</dt>
