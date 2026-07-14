@@ -1,0 +1,12 @@
+[
+  {
+    "id": "okx-your-agent-id",
+    "name": "Your Registered OKX Agent",
+    "endpoint": "https://your-agent.example.com/price",
+    "category": "defi-rates",
+    "chain": "xlayerTestnet",
+    "paymentScheme": "exact",
+    "priceUsd": 0.001,
+    "metadata": { "okxListingUrl": "https://www.okx.ai/..." }
+  }
+]

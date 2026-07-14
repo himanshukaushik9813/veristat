@@ -1,5 +1,6 @@
 import type { Account } from "viem";
 import { payAndFetch } from "@veristat/chain";
+import { evaluateGuardPolicy, type GuardPolicy as GuardPolicyBase } from "@veristat/shared";
 
 /**
  * @veristat/sdk — the pre-purchase gate for agent spending.
@@ -46,15 +47,7 @@ export interface ScoreResult {
   conflictOfInterest: string | null;
 }
 
-export interface GuardPolicy {
-  /** Minimum composite score (default 70). */
-  minScore?: number;
-  /** Minimum confidence 0..1 (default 0.3). */
-  minConfidence?: number;
-  /** Require verified accuracy (reject Tier-3 "accuracy not verified") (default false). */
-  requireVerifiedAccuracy?: boolean;
-  /** Minimum integrity score — billing honesty (default 60). */
-  minIntegrity?: number;
+export interface GuardPolicy extends GuardPolicyBase {
   /** What to do when the service is unknown to Veristat (default "warn"). */
   onUnknown?: "allow" | "warn" | "block";
 }
@@ -118,13 +111,7 @@ export class Veristat {
    * Pure policy over verified evidence — never a vibe.
    */
   async guard(endpointUrl: string, policy: GuardPolicy = {}): Promise<GuardResult> {
-    const {
-      minScore = 70,
-      minConfidence = 0.3,
-      requireVerifiedAccuracy = false,
-      minIntegrity = 60,
-      onUnknown = "warn",
-    } = policy;
+    const onUnknown = policy.onUnknown ?? "warn";
 
     let result: ScoreResult | null;
     try {
@@ -151,25 +138,18 @@ export class Veristat {
     }
 
     const s = result.score;
-    const checks: Array<[boolean, string]> = [
-      [s.composite >= minScore, `composite ${s.composite.toFixed(1)} < required ${minScore}`],
-      [s.confidence >= minConfidence, `confidence ${(s.confidence * 100).toFixed(0)}% < required ${minConfidence * 100}%`],
-      [s.dimensions.integrity >= minIntegrity, `integrity ${s.dimensions.integrity.toFixed(0)} < required ${minIntegrity} (billing risk)`],
-      [
-        !requireVerifiedAccuracy || s.dimensions.accuracy !== null,
-        "accuracy not verified (Tier 3) but policy requires verified accuracy",
-      ],
-    ];
-    const failed = checks.filter(([ok]) => !ok).map(([, why]) => why);
-    if (failed.length > 0) {
-      return { allow: false, reason: failed.join("; "), score: s, serviceId: result.service.id };
-    }
-    return {
-      allow: true,
-      reason: `grade ${s.grade} (${s.composite.toFixed(1)}), confidence ${(s.confidence * 100).toFixed(0)}%, ${s.sampleCount} verified verdicts`,
-      score: s,
-      serviceId: result.service.id,
-    };
+    const decision = evaluateGuardPolicy(
+      {
+        composite: s.composite,
+        confidence: s.confidence,
+        integrity: s.dimensions.integrity,
+        accuracyVerified: s.dimensions.accuracy !== null,
+        grade: s.grade,
+        sampleCount: s.sampleCount,
+      },
+      policy,
+    );
+    return { allow: decision.allow, reason: decision.reason, score: s, serviceId: result.service.id };
   }
 }
 

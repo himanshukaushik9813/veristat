@@ -12,6 +12,7 @@ import {
 } from "@veristat/db";
 import { ensureDb, fmt, gradeBand } from "@/lib/data";
 import { Sparkline } from "@/components/Sparkline";
+import { VerifyProof } from "@/components/VerifyProof";
 
 export const dynamic = "force-dynamic";
 
@@ -227,6 +228,7 @@ export default async function ServicePage({ params }: { params: Promise<{ id: st
                 </dd>
               </dl>
             ))}
+            {rows[0] && <VerifyProof verificationId={rows[0].id} />}
           </details>
         );
       })}

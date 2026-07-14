@@ -66,6 +66,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@veristat/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
       '@veristat/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -84,6 +87,9 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.2.7(react@19.2.7)
+      viem:
+        specifier: ^2.21.0
+        version: 2.54.3(typescript@5.9.3)(zod@3.25.76)
     devDependencies:
       '@types/node':
         specifier: ^24.13.2

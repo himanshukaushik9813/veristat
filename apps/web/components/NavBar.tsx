@@ -82,6 +82,9 @@ export function NavBar() {
           <Link href="/leaderboard" className={`nav-link${is("/leaderboard") || is("/service") ? " active" : ""}`}>
             Leaderboard
           </Link>
+          <Link href="/demo" className={`nav-link${is("/demo") ? " active" : ""}`}>
+            Live Demo
+          </Link>
           <Link href="/report" className={`nav-link${is("/report") ? " active" : ""}`}>
             Reports
           </Link>

@@ -1,7 +1,7 @@
 import express from "express";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { createLogger } from "@veristat/shared";
+import { createLogger, evaluateGuardPolicy } from "@veristat/shared";
 import {
   createAlertSubscription,
   getService,
@@ -147,6 +147,69 @@ app.get("/v1/resolve", async (req, res) => {
       endpoint: r.service.endpoint,
       category: r.service.category,
     })),
+  });
+});
+
+/**
+ * Free pre-purchase gate (spec §4.2): the go/no-go decision itself is free so an
+ * agent can cheaply decide whether to pay a service; the detailed score and
+ * evidence behind it stay paid. Same policy the @veristat/sdk `guard()` runs.
+ * Query: ?serviceId= | ?endpoint= (+ minScore, minIntegrity, minConfidence,
+ * requireVerifiedAccuracy).
+ */
+app.get("/v1/guard", async (req, res) => {
+  const q = req.query;
+  let service: Awaited<ReturnType<typeof getService>> | undefined;
+  if (q.serviceId != null) {
+    service = await getService(Number(q.serviceId));
+  } else if (q.endpoint != null) {
+    const norm = (u: string) => u.replace(/\/+$/, "").toLowerCase();
+    const ep = norm(String(q.endpoint));
+    const all = await leaderboard();
+    const match = all.find((r) => norm(r.service.endpoint) === ep || ep.startsWith(norm(r.service.endpoint)));
+    service = match?.service;
+  } else {
+    res.status(400).json({ error: "serviceId or endpoint query param required" });
+    return;
+  }
+  if (!service) {
+    res.json({ allow: false, reason: "service not yet audited by Veristat — no verified track record exists", service: null, score: null });
+    return;
+  }
+  const score = await latestScore(service.id);
+  if (!score) {
+    res.json({
+      allow: false,
+      reason: "service not yet audited by Veristat — no verified track record exists",
+      service: { id: service.id, name: service.name, endpoint: service.endpoint },
+      score: null,
+    });
+    return;
+  }
+  const policy = {
+    minScore: q.minScore != null ? Number(q.minScore) : undefined,
+    minConfidence: q.minConfidence != null ? Number(q.minConfidence) : undefined,
+    minIntegrity: q.minIntegrity != null ? Number(q.minIntegrity) : undefined,
+    requireVerifiedAccuracy: q.requireVerifiedAccuracy === "true",
+  };
+  const decision = evaluateGuardPolicy(
+    {
+      composite: score.composite,
+      confidence: score.confidence,
+      integrity: score.integrity,
+      accuracyVerified: score.accuracy !== null,
+      grade: score.grade,
+      sampleCount: score.sampleCount,
+    },
+    policy,
+  );
+  res.json({
+    allow: decision.allow,
+    reason: decision.reason,
+    failures: decision.failures,
+    service: { id: service.id, name: service.name, endpoint: service.endpoint, category: service.category },
+    score: { composite: score.composite, grade: score.grade, confidence: score.confidence, integrity: score.integrity, sampleCount: score.sampleCount },
+    policy: { minScore: policy.minScore ?? 70, minConfidence: policy.minConfidence ?? 0.3, minIntegrity: policy.minIntegrity ?? 60, requireVerifiedAccuracy: policy.requireVerifiedAccuracy },
   });
 });
 

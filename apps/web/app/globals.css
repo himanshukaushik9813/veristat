@@ -564,3 +564,26 @@ pre.code {
 }
 pre.code .hl { color: var(--accent); }
 pre.code .ok { color: var(--good); }
+
+/* "Verify it yourself" proof widget (scorecard evidence) */
+.verify-proof { margin-top: 12px; }
+.btn-verify {
+  font: 600 12.5px/1 var(--font-mono); cursor: pointer;
+  color: var(--accent); background: var(--accent-tint);
+  border: 1px solid var(--accent-dim); border-radius: var(--radius-pill);
+  padding: 8px 14px; transition: background 120ms var(--ease-out), color 120ms var(--ease-out);
+}
+.btn-verify:hover:not(:disabled) { background: var(--accent); color: #fff; }
+.btn-verify:disabled { opacity: 0.6; cursor: progress; }
+.verify-out { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.verify-step { font: 12.5px/1.5 var(--font-mono); }
+.verify-step.good { color: var(--good); }
+.verify-step.bad { color: var(--critical); }
+.verify-step.muted { color: var(--text-muted); }
+.verify-detail { color: var(--text-muted); font-size: 11px; word-break: break-all; padding-left: 16px; }
+.verify-verdict {
+  margin-top: 4px; padding: 10px 12px; font-size: 12.5px; line-height: 1.5;
+  color: var(--text-primary); background: var(--good-tint);
+  border: 1px solid var(--good); border-radius: var(--radius-md);
+}
+.verify-verdict a { color: var(--accent); }

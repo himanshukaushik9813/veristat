@@ -40,6 +40,22 @@ Shared (all three services): `DATABASE_URL` (Railway Postgres ref),
 `PUBLIC_BASE_URL` (its own Vercel URL), `VERISTAT_API_URL` (score-api URL).
 No mnemonic, ever.
 
+## Probing a real OKX agent (your manual step)
+
+By default the worker probes the four bundled mock ASPs. To have Veristat verify a
+**real** agent from the OKX ecosystem (the strongest credibility signal for judges):
+
+1. Register your paid service as an ASP at <https://www.okx.ai/tutorial/asp>. This is
+   manual — okx.ai blocks automated fetches, so it can't be scripted.
+2. Add the registered endpoint to `data/okx-asp-seed.json` (see
+   `data/okx-asp-seed.example.json` for the shape). Use `category: "defi-rates"` so the
+   accuracy templates apply; other categories are scored operationally only (Tier 3).
+3. Redeploy the worker: `railway up --service worker`. The `okx_asp` discovery source
+   picks up the seed on its next crawl (~15 min) and probes it like any other service.
+
+The discovery plumbing (`okxAspSource` in `apps/worker/src/crawl/sources.ts`) is already
+wired; only the registration + seed entry are manual.
+
 ## Secrets
 
 `PROBE_MNEMONIC` is a **testnet-only** funded key. It lives in `.env` (gitignored)
