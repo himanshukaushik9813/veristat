@@ -6,6 +6,8 @@ import { Sparkline } from "@/components/Sparkline";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = { title: "Leaderboard" };
+
 function txLink(chain: string | null, hash: string): string | null {
   const c = chain && chain in CHAINS ? CHAINS[chain as ChainKey] : null;
   return c ? c.explorerTxUrl(hash) : null;

@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { leaderboard } from "@veristat/db";
 import { ensureDb } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Live Demo — would your agent pay this service?",
+  description:
+    "Watch an agent call guard() and refuse to pay a low-scoring service, live against the Veristat score API.",
+};
 
 /** Free pre-purchase gate on the live score API. Same policy the SDK guard() runs. */
 interface GuardResponse {

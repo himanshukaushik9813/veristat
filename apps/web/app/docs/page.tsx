@@ -33,6 +33,12 @@ if (!gate.allow) throw new Error(\`blocked: \${gate.reason}\`);`}</pre>
   score: { composite: 51.1, grade: "F", dimensions: { accuracy: 0, integrity: 100, ... } },
   serviceId: 3
 }`}</pre>
+      <p>
+        The go/no-go decision is also a <strong>free</strong> HTTP call —{" "}
+        <code>GET /v1/guard?endpoint=&lt;url&gt;&amp;minScore=70</code> — so an agent never pays
+        just to decide whether to pay. Watch it run live at{" "}
+        <a href="/demo">/demo</a>.
+      </p>
 
       <h2 id="mcp">MCP server — scores as agent tools</h2>
       <p>Plug Veristat into Claude or any MCP-capable agent:</p>
@@ -53,8 +59,9 @@ if (!gate.allow) throw new Error(\`blocked: \${gate.reason}\`);`}</pre>
       <h2 id="api">Paid score API — x402</h2>
       <p>
         Agents pay per lookup in stablecoin via the x402 protocol (402 challenge → settle →
-        retry with <code>X-PAYMENT</code>). Free endpoints: <code>/v1/resolve</code>,{" "}
-        <code>/v1/methodology</code>, <code>/.well-known/veristat.json</code>.
+        retry with <code>X-PAYMENT</code>). Free endpoints: <code>/v1/guard</code>,{" "}
+        <code>/v1/resolve</code>, <code>/v1/methodology</code>,{" "}
+        <code>/.well-known/veristat.json</code>.
       </p>
       <table>
         <thead>

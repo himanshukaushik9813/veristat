@@ -18,6 +18,23 @@ the results into:
 Built for the OKX XLayer hackathon. No token. Providers can never pay to change
 a score ([neutrality policy](docs/neutrality-policy.md), [methodology](docs/methodology.md)).
 
+## Live now
+
+| Surface | URL |
+|---|---|
+| 🌐 Dashboard & leaderboard | **https://veristat-two.vercel.app** |
+| 🤖 Live "would your agent pay?" demo | https://veristat-two.vercel.app/demo |
+| 💸 Paid x402 score API | https://score-api-production-661b.up.railway.app |
+| 🔎 A probed agent (x402 402 challenge) | https://mock-asps-production.up.railway.app/honest/query?base=ETH |
+
+**The 30-second story:** open **/demo** → an agent calls `guard()` and *refuses to
+pay* the Liar Oracle (`composite 51 < 70`) while approving the Honest Oracle
+(grade A) → open any scorecard → click **🔒 Verify this verdict on-chain** → the
+browser recomputes the Merkle proof from published evidence and the on-chain
+`EvidenceAnchor.verifyLeaf()` returns **PROOF VALID ON-CHAIN**, linked to OKLink.
+Everything on the site is real: every score traces to an x402 payment tx and a
+Merkle-anchored evidence row on XLayer testnet.
+
 ## Architecture
 
 ```
@@ -144,13 +161,16 @@ Full formula: [docs/methodology.md](docs/methodology.md).
 ```ts
 import { Veristat } from "@veristat/sdk";
 
-const veristat = new Veristat({ baseUrl: "https://api.veristat.example" });
+const veristat = new Veristat({ baseUrl: "https://score-api-production-661b.up.railway.app" });
 const gate = await veristat.guard(serviceUrl, { minScore: 70, requireVerifiedAccuracy: true });
 if (!gate.allow) throw new Error(`blocked: ${gate.reason}`);
 ```
 
 `guard()` fails closed when a service has no verified track record (configurable
-via `onUnknown: "allow" | "warn" | "block"`).
+via `onUnknown: "allow" | "warn" | "block"`). The go/no-go decision is also a
+**free** HTTP call — `GET /v1/guard?endpoint=<url>&minScore=70` — so an agent
+never pays just to learn whether to pay; the detailed score and evidence behind
+it stay paid. See it running live at [/demo](https://veristat-two.vercel.app/demo).
 
 **MCP — plug it into Claude or any MCP client:**
 
@@ -180,7 +200,10 @@ pnpm --filter @veristat/worker verify-proof 42
 
 It fetches the canonical rows from the public API (`/api/anchors/:id/leaves`),
 rebuilds the sha256 sorted-pair tree, and calls `EvidenceAnchor.verifyLeaf()`
-on XLayer with the recomputed proof.
+on XLayer with the recomputed proof. The same check runs **in the browser** from
+every scorecard (the **🔒 Verify this verdict on-chain** button) via
+`GET /api/verify/:id` — judges don't need a terminal to confirm nothing was
+tampered with.
 
 ## Tests
 
