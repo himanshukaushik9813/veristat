@@ -12,3 +12,5 @@ contracts/cache/
 contracts/broadcast/**/dry-run/
 coverage/
 .DS_Store
+.vercel
+.env*

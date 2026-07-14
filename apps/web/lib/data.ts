@@ -3,8 +3,15 @@ import { runMigrations } from "@veristat/db";
 
 let migrated: Promise<void> | null = null;
 
-/** Ensure schema exists once per server process (PGlite dev / fresh Postgres). */
+/**
+ * Ensure schema exists once per server process. Local dev uses embedded PGlite
+ * (no DATABASE_URL) and must migrate on boot. In production DATABASE_URL points
+ * at a Postgres already migrated out-of-band by the deploy pipeline, so the
+ * read-only frontend skips migration (its migration assets aren't bundled into
+ * serverless functions anyway).
+ */
 export function ensureDb(): Promise<void> {
+  if (process.env.DATABASE_URL) return Promise.resolve();
   migrated ??= runMigrations().catch((err) => {
     migrated = null;
     throw err;
