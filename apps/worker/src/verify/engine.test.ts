@@ -52,6 +52,29 @@ describe("verifyProbe — operational verdicts", () => {
     expect(rel.detail).toContain("settled on-chain but service failed");
   });
 
+  it("never blames the service when the probe payment fails on our side", async () => {
+    const built = await genericTemplate.build("xlayerTestnet", fakeReader);
+    // The service answered its 402 correctly; our wallet could not settle (or the
+    // budget governor refused the quote). That is Veristat's failure, not theirs.
+    const rs = await verifyProbe(genericTemplate, "xlayerTestnet", fakeReader, built, {
+      httpStatus: 402,
+      x402Status: "payment_failed",
+      quotedUsd: 0.001,
+      chargedUsd: null,
+      rawResponse: null,
+      latencyMs: 4200,
+      error: null,
+    });
+    const rel = rs.find((r) => r.dimension === "reliability")!;
+    const lat = rs.find((r) => r.dimension === "latency")!;
+    // `unverifiable` is excluded by the scorer — a `fail` here would let our own
+    // broke wallet drag down someone else's score.
+    expect(rel.verdict).toBe("unverifiable");
+    expect(rel.verdict).not.toBe("fail");
+    expect(rel.detail).toContain("not at fault");
+    expect(lat.verdict).toBe("unverifiable");
+  });
+
   it("flags overcharge as integrity failure", async () => {
     const built = await genericTemplate.build("xlayerTestnet", fakeReader);
     const rs = await verifyProbe(genericTemplate, "xlayerTestnet", fakeReader, built, {

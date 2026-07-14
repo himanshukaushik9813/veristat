@@ -2,14 +2,15 @@
   {
     "id": "veristat-score-api",
     "name": "Veristat Score API",
-    "endpoint": "http://localhost:4020/v1",
+    "endpoint": "https://score-api-production-661b.up.railway.app/v1",
     "category": "generic",
     "chain": "xlayerTestnet",
     "paymentScheme": "exact",
     "priceUsd": 0.001,
     "metadata": {
       "self": true,
-      "description": "Veristat's own pre-purchase score API, scored by the same methodology (conflict of interest disclosed)"
+      "okxAspId": "5623",
+      "description": "Veristat's own pre-purchase score API — a registered OKX.AI ASP (#5623), probed and scored by the same methodology as any other service (conflict of interest disclosed)"
     }
   }
 ]

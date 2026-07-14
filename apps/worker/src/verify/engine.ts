@@ -16,7 +16,14 @@ export async function verifyProbe(
 ): Promise<VerificationResult[]> {
   const results: VerificationResult[] = [];
 
-  // Reliability: service reachable, protocol-correct, settlement not wasted.
+  // `payment_failed` is OUR failure, never the service's: it is set only when the
+  // budget governor refuses a quote, or when the probe wallet cannot send the
+  // transfer. The service issued a correct 402 and never got the chance to
+  // answer, so scoring it unreliable would be a characterization, not a
+  // measurement. Emit `unverifiable` (the scorer excludes it) instead of `fail`.
+  // A service that takes payment and then fails to deliver is a different case
+  // (`settled` + non-2xx → settlementWasted) and still fails reliability.
+  const proberFault = outcome.x402Status === "payment_failed";
   const answered =
     outcome.httpStatus !== null && outcome.httpStatus >= 200 && outcome.httpStatus < 300;
   const settlementWasted = outcome.x402Status === "settled" && !answered;
@@ -24,28 +31,34 @@ export async function verifyProbe(
     result({
       tier: 3,
       dimension: "reliability",
-      verdict: verdictOf(answered && !settlementWasted),
+      verdict: proberFault ? "unverifiable" : verdictOf(answered && !settlementWasted),
       expected: "2xx response to a settled request",
       actual: { httpStatus: outcome.httpStatus, x402Status: outcome.x402Status, error: outcome.error },
       groundTruth: null,
-      detail: settlementWasted
-        ? "payment settled on-chain but service failed to deliver"
-        : answered
-          ? "request served"
-          : `request failed: ${outcome.error ?? `http ${outcome.httpStatus}`}`,
+      detail: proberFault
+        ? "probe payment failed on Veristat's side (budget refusal or wallet failure) — the service answered its 402 correctly and is not at fault"
+        : settlementWasted
+          ? "payment settled on-chain but service failed to deliver"
+          : answered
+            ? "request served"
+            : `request failed: ${outcome.error ?? `http ${outcome.httpStatus}`}`,
     }),
   );
 
-  // Latency observation (score computed against category baseline later).
+  // Latency observation (score computed against category baseline later). When
+  // the payment failed on our side the elapsed time measures Veristat's own
+  // failure path, not the service — so it must not enter the latency score.
   results.push(
     result({
       tier: 3,
       dimension: "latency",
-      verdict: "pass",
+      verdict: proberFault ? "unverifiable" : "pass",
       expected: null,
       actual: outcome.latencyMs,
       groundTruth: null,
-      detail: `end-to-end latency ${outcome.latencyMs}ms`,
+      detail: proberFault
+        ? "latency not attributable to the service — probe payment failed before the request was served"
+        : `end-to-end latency ${outcome.latencyMs}ms`,
     }),
   );
 
