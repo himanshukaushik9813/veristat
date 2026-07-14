@@ -20,12 +20,24 @@ a score ([neutrality policy](docs/neutrality-policy.md), [methodology](docs/meth
 
 ## Live now
 
+**Veristat is a registered OKX.AI Agent Service Provider — [ASP #5623](https://www.oklink.com/xlayer/tx/0x42cd8092d851265bfd8978b3ac7fc98696afe11fd2a3a8f1aef66601b1dc84c0) on X Layer.**
+A paid x402 agent service that audits *other* paid agent services — and appears on its own
+leaderboard with a conflict-of-interest label, scored by the same methodology.
+
 | Surface | URL |
 |---|---|
 | 🌐 Dashboard & leaderboard | **https://veristat-two.vercel.app** |
 | 🤖 Live "would your agent pay?" demo | https://veristat-two.vercel.app/demo |
 | 💸 Paid x402 score API | https://score-api-production-661b.up.railway.app |
 | 🔎 A probed agent (x402 402 challenge) | https://mock-asps-production.up.railway.app/honest/query?base=ETH |
+
+Its three listed A2MCP services (pay-per-call via x402, each returning a real `402` challenge):
+
+| Service | Price | Endpoint |
+|---|---|---|
+| Agent Service Trust Score | $0.001 | `/v1/lookup?endpoint=<serviceUrl>` |
+| Full Evidence Report | $0.005 | `/v1/evidence?endpoint=<serviceUrl>` |
+| Category Ranking Comparison | $0.002 | `/v1/compare?category=<category>` |
 
 **The 30-second story:** open **/demo** → an agent calls `guard()` and *refuses to
 pay* the Liar Oracle (`composite 51 < 70`) while approving the Honest Oracle
@@ -212,13 +224,22 @@ pnpm test          # scoring, merkle, verification engine, anti-gaming, SDK guar
 cd contracts && forge test   # anchor + ERC-8004 registries (13 tests)
 ```
 
-## Registering as an OKX.AI ASP
+## Registered as an OKX.AI ASP ✅
 
-The score API self-describes at `/.well-known/veristat.json`. Register the
-deployed endpoint at [okx.ai/tutorial/asp](https://www.okx.ai/tutorial/asp)
-(requires an OKX account and their review). Veristat's own listing is seeded in
-`data/curated.json` and appears on the leaderboard with a conflict-of-interest
-label, scored by the same methodology.
+Veristat is live in the OKX.AI marketplace as **ASP #5623**, an ERC-8004 agent
+identity on X Layer:
+
+| | |
+|---|---|
+| Agent ID | **#5623** |
+| Registration tx | [`0x42cd80…dc84c0`](https://www.oklink.com/xlayer/tx/0x42cd8092d851265bfd8978b3ac7fc98696afe11fd2a3a8f1aef66601b1dc84c0) |
+| Chain | X Layer (chainIndex 196) |
+| Services | 3 × A2MCP, pay-per-call via x402 |
+
+Registered through OKX's Onchain OS (`onchainos agent create --role asp`). The
+score API also self-describes at `/.well-known/veristat.json`. Veristat's own
+listing appears on its own leaderboard with a conflict-of-interest label, scored
+by the same methodology — the rater is rated.
 
 ## Neutrality
 

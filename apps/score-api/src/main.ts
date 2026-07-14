@@ -121,6 +121,120 @@ app.get("/v1/evidence/:serviceId", paid(PRICE_EVIDENCE), async (req, res) => {
   });
 });
 
+/**
+ * The product, as one call (Veristat's OKX.AI A2MCP listing): hand it ANY paid
+ * agent-service URL, get back that service's verified track record. Unlike
+ * /v1/score/:serviceId this needs no prior knowledge of Veristat's catalog ids,
+ * so it works as a stable, permanent endpoint for an agent that just wants to
+ * know "should I pay this thing?".
+ */
+app.get("/v1/lookup", paid(PRICE_SCORE), async (req, res) => {
+  const endpoint = String(req.query.endpoint ?? "");
+  if (!endpoint) {
+    res.status(400).json({ error: "endpoint query param required, e.g. /v1/lookup?endpoint=https://some-agent/api" });
+    return;
+  }
+  const norm = (u: string) => u.replace(/\/+$/, "").toLowerCase();
+  const ep = norm(endpoint);
+  const all = await leaderboard();
+  const match = all.find(
+    (r) => norm(r.service.endpoint) === ep || ep.startsWith(norm(r.service.endpoint)),
+  );
+  if (!match) {
+    // They paid for an answer and this IS the answer: no verified track record exists.
+    res.json({
+      endpoint,
+      audited: false,
+      score: null,
+      advice: "Veristat has no verified track record for this endpoint — treat it as unproven.",
+    });
+    return;
+  }
+  const service = match.service;
+  const score = await latestScore(service.id);
+  res.json({
+    endpoint,
+    audited: true,
+    service: { id: service.id, name: service.name, endpoint: service.endpoint, category: service.category, status: service.status },
+    score: score ? scorePayload(score) : null,
+    conflictOfInterest: service.isSelf ? "this is Veristat's own listing, scored by the same methodology" : null,
+    scorecardUrl: `${(process.env.PUBLIC_BASE_URL ?? "").replace(/\/$/, "")}/service/${service.id}`,
+  });
+});
+
+/**
+ * Full evidence behind a service's score, addressed by its endpoint URL (the
+ * catalog-id-free twin of /v1/evidence/:serviceId, so it works as a permanent
+ * OKX.AI listing endpoint). Every probe, its payment tx, the ground truth used,
+ * and the per-dimension verdicts.
+ */
+app.get("/v1/evidence", paid(PRICE_EVIDENCE), async (req, res) => {
+  const endpoint = String(req.query.endpoint ?? "");
+  if (!endpoint) {
+    res.status(400).json({ error: "endpoint query param required, e.g. /v1/evidence?endpoint=https://some-agent/api" });
+    return;
+  }
+  const norm = (u: string) => u.replace(/\/+$/, "").toLowerCase();
+  const ep = norm(endpoint);
+  const all = await leaderboard();
+  const match = all.find(
+    (r) => norm(r.service.endpoint) === ep || ep.startsWith(norm(r.service.endpoint)),
+  );
+  if (!match) {
+    res.json({ endpoint, audited: false, evidence: [], advice: "Veristat has no evidence for this endpoint — it has never been probed." });
+    return;
+  }
+  const service = match.service;
+  const [score, history, probes, incidents] = await Promise.all([
+    latestScore(service.id),
+    scoreHistory(service.id, 100),
+    recentProbes(service.id, 20),
+    listIncidents(service.id, 50),
+  ]);
+  const verifications = await verificationsForProbes(probes.map((p) => p.id));
+  res.json({
+    endpoint,
+    audited: true,
+    service: { id: service.id, name: service.name, endpoint: service.endpoint, category: service.category },
+    score: score ? scorePayload(score) : null,
+    scoreHistory: history.map((h) => ({ composite: h.composite, computedAt: h.computedAt })),
+    incidents,
+    evidence: probes.map((p) => ({
+      probeId: p.id,
+      templateId: p.templateId,
+      paymentTxHash: p.paymentTxHash,
+      quotedUsd: p.quotedUsd,
+      chargedUsd: p.chargedUsd,
+      latencyMs: p.latencyMs,
+      responseHash: p.responseHash,
+      startedAt: p.startedAt,
+      verdicts: verifications
+        .filter((v) => v.probeId === p.id)
+        .map((v) => ({ tier: v.tier, dimension: v.dimension, verdict: v.verdict, expected: v.expected, actual: v.actual, groundTruth: v.groundTruth, detail: v.detail })),
+    })),
+  });
+});
+
+/** Ranked comparison of every scored service in a category (query-param twin of /v1/category/:category). */
+app.get("/v1/compare", paid(PRICE_CATEGORY), async (req, res) => {
+  const category = String(req.query.category ?? "");
+  if (!category) {
+    res.status(400).json({ error: "category query param required, e.g. /v1/compare?category=defi-rates" });
+    return;
+  }
+  const rows = await leaderboard();
+  const filtered = rows.filter((r) => r.service.category === category);
+  res.json({
+    category,
+    services: filtered.map((r) => ({
+      id: r.service.id,
+      name: r.service.name,
+      endpoint: r.service.endpoint,
+      score: r.score ? scorePayload(r.score) : null,
+    })),
+  });
+});
+
 /** Probe-able echo endpoint so Veristat's own listing is scored like any other ASP (spec §9). */
 app.get("/v1/query", paid(PRICE_SCORE), (req, res) => {
   res.json({ value: { echo: req.query.nonce ?? null }, timestamp: Math.floor(Date.now() / 1000) });

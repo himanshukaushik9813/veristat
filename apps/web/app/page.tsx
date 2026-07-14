@@ -80,6 +80,17 @@ export default async function Landing() {
         <div className="hero-art" aria-hidden />
         <div className="hero-scan" aria-hidden />
         <div className="hero">
+          <a
+            className="okx-badge"
+            href="https://www.oklink.com/xlayer/tx/0x42cd8092d851265bfd8978b3ac7fc98696afe11fd2a3a8f1aef66601b1dc84c0"
+            target="_blank"
+            rel="noreferrer"
+            title="Veristat's ERC-8004 agent identity, registered on X Layer"
+          >
+            <span className="okx-dot" aria-hidden />
+            Registered OKX.AI ASP <strong>#5623</strong> on X Layer
+            <span aria-hidden>↗</span>
+          </a>
           <h1>
             Trust,
             <br />

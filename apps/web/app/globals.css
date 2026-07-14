@@ -587,3 +587,19 @@ pre.code .ok { color: var(--good); }
   border: 1px solid var(--good); border-radius: var(--radius-md);
 }
 .verify-verdict a { color: var(--accent); }
+
+/* "Registered OKX.AI ASP" hero badge — links to the on-chain identity tx */
+.okx-badge {
+  display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px;
+  padding: 7px 14px; border-radius: var(--radius-pill);
+  font: 500 12.5px/1 var(--font-mono); letter-spacing: 0.01em;
+  color: var(--text-secondary); text-decoration: none;
+  background: var(--accent-tint); border: 1px solid var(--accent-dim);
+  transition: border-color 140ms var(--ease-out), color 140ms var(--ease-out);
+}
+.okx-badge:hover { color: var(--text-primary); border-color: var(--accent); }
+.okx-badge strong { color: var(--accent); font-weight: 700; }
+.okx-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--good); box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 22%, transparent);
+}
